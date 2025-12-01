@@ -41,7 +41,7 @@ export function initIO(server: any) {
           }
           const chatType = (message as any).chatType || 'individual';
           if (chatType === 'group') {
-            io.emit('newMessage', message);
+            io?.emit('newMessage', message);
           } else {
             const receiverId = (message as any).receiverId;
             if (receiverId == null) {
@@ -59,7 +59,7 @@ export function initIO(server: any) {
       socket.on('typing', (payload: { chatType: 'individual' | 'group'; receiverId?: string | number; senderId: number; senderName?: string }) => {
         try {
           if (payload.chatType === 'group') {
-            io.emit('typing', { senderId: payload.senderId, senderName: payload.senderName, chatType: 'group' });
+            io?.emit('typing', { senderId: payload.senderId, senderName: payload.senderName, chatType: 'group' });
           } else if (payload.receiverId) {
             socket.to(`user_${payload.receiverId}`).emit('typing', { senderId: payload.senderId, senderName: payload.senderName, chatType: 'individual' });
           }
@@ -71,7 +71,7 @@ export function initIO(server: any) {
       socket.on('stopTyping', (payload: { chatType: 'individual' | 'group'; receiverId?: string | number; senderId: number }) => {
         try {
           if (payload.chatType === 'group') {
-            io.emit('stopTyping', { senderId: payload.senderId, chatType: 'group' });
+            io?.emit('stopTyping', { senderId: payload.senderId, chatType: 'group' });
           } else if (payload.receiverId) {
             socket.to(`user_${payload.receiverId}`).emit('stopTyping', { senderId: payload.senderId, chatType: 'individual' });
           }

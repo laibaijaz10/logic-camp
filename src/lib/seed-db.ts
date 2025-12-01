@@ -57,7 +57,7 @@ export async function seedDatabase() {
       password: adminPassword,
       role: 'admin',
       is_active: true,
-      isApproved: true,
+      is_approved: true,
     });
 
     // Create regular user
@@ -68,7 +68,7 @@ export async function seedDatabase() {
       password: userPassword,
       role: 'employee',
       is_active: true,
-      isApproved: true,
+      is_approved: true,
     });
 
     // Create team
@@ -76,7 +76,7 @@ export async function seedDatabase() {
       name: 'Development Team',
       description: 'Main development team for the project',
       is_active: true,
-      createdById: admin.id,
+      team_lead_id: admin.id,
     });
 
     // Add users to team
