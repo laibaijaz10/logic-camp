@@ -11,7 +11,7 @@ const updateTaskSchema = z.object({
   status: z.enum(['todo', 'inProgress', 'testing', 'completed', 'done']).optional(),
   dueDate: z.string().optional(),
   assignedToId: z.number().optional(),
-  goalId: z.number().min(1, 'Goal ID is required').optional(),
+  projectId: z.number().min(1, 'Project ID is required').optional(),
   statuses: z.array(z.object({
     id: z.number(),
     title: z.string(),
@@ -28,7 +28,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { Task, User, Goal } = await getModels();
+    const { Task, User, Project } = await getModels();
 
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
@@ -45,7 +45,6 @@ export async function GET(
         { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email'] },
         { model: User, as: 'assignees', attributes: ['id', 'name', 'email'] },
         { model: User, as: 'createdBy', attributes: ['id', 'name', 'email'] },
-        { model: Goal, as: 'goal', attributes: ['id', 'title', 'status'] },
       ],
     });
 
@@ -97,7 +96,7 @@ export async function PUT(
     if (parsed.data.status !== undefined) updates.status_title = parsed.data.status;
     if (parsed.data.dueDate !== undefined) updates.deadline = parsed.data.dueDate;
     if (parsed.data.assignedToId !== undefined) updates.assigned_to_id = parsed.data.assignedToId;
-    if (parsed.data.goalId !== undefined) updates.goal_id = parsed.data.goalId;
+    if (parsed.data.projectId !== undefined) updates.project_id = parsed.data.projectId;
     if (parsed.data.statuses !== undefined) updates.statuses = parsed.data.statuses;
 
     await existing.update(updates);

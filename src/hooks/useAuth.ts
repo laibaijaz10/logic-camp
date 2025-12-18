@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { JWTPayload } from '@/lib/auth';
+import { db } from '@/lib/mockData';
 
 export interface AuthState {
   isAuthenticated: boolean;
-  user: JWTPayload | null;
+  user: any | null;
   loading: boolean;
   error: string | null;
 }
@@ -12,144 +12,48 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     user: null,
-    loading: true,
+    loading: false,
     error: null,
   });
 
   const checkAuth = useCallback(async () => {
-    try {
-      const response = await fetch('/api/auth/check', {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Auth check failed');
-      }
-
-      const contentType = response.headers.get('content-type') || '';
-      const data = contentType.includes('application/json') ? await response.json() : await Promise.reject(new Error('Unexpected non-JSON response from /api/auth/check'));
-      setAuthState({
-        isAuthenticated: true,
-        user: data.user,
-        loading: false,
-        error: null,
-      });
-    } catch (err) {
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      });
-    }
+    // Already authenticated in mock mode
+    return;
   }, []);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    // In future, we could check an existing session or token here.
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-      if (!response.ok) {
-        const errorData = contentType.includes('application/json') ? await response.json().catch(() => ({})) : {} as any;
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      const data = contentType.includes('application/json') ? await response.json() : await Promise.reject(new Error('Unexpected non-JSON response from /api/auth/login'));
-      
-      // Store token in localStorage
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
-      }
-      
-      setAuthState({
-        isAuthenticated: true,
-        user: data.user,
-        loading: false,
-        error: null,
-      });
-      return data;
-    } catch (err) {
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }));
-      throw err;
-    }
+    setAuthState({
+      isAuthenticated: true,
+      user: {
+        userId: 1,
+        email: email,
+        role: 'admin',
+        iat: Date.now(),
+        exp: Date.now() + 86400000,
+      },
+      loading: false,
+      error: null,
+    });
+    return { token: 'mock-token', user: db.users[0] };
   }, []);
 
   const adminLogin = useCallback(async (email: string, password: string) => {
-    setAuthState(prev => ({ ...prev, loading: true, error: null }));
-    try {
-      const response = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Admin login failed');
-      }
-
-      const data = await response.json();
-      
-      // Store admin token in localStorage
-      if (data.token) {
-        localStorage.setItem('adminToken', data.token);
-      }
-      
-      setAuthState({
-        isAuthenticated: true,
-        user: data.admin,
-        loading: false,
-        error: null,
-      });
-      return data;
-    } catch (err) {
-      setAuthState(prev => ({
-        ...prev,
-        loading: false,
-        error: err instanceof Error ? err.message : 'Unknown error',
-      }));
-      throw err;
-    }
-  }, []);
+    return login(email, password);
+  }, [login]);
 
   const logout = useCallback(async () => {
-    setAuthState(prev => ({ ...prev, loading: true }));
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      
-      // Clear localStorage tokens
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('user');
-      
-      setAuthState({
-        isAuthenticated: false,
-        user: null,
-        loading: false,
-        error: null,
-      });
-    } catch (err) {
-      setAuthState(prev => ({ ...prev, loading: false }));
-      console.error('Logout failed:', err);
-    }
+    setAuthState({
+      isAuthenticated: false,
+      user: null,
+      loading: false,
+      error: null,
+    });
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('adminToken');
   }, []);
 
   return { ...authState, login, adminLogin, logout, checkAuth };

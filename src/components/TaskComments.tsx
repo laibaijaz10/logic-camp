@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import io, { Socket } from 'socket.io-client';
 
 type CommentUser = { id: number; name: string };
 type TaskComment = {
@@ -22,7 +21,6 @@ export default function TaskComments({ taskId }: TaskCommentsProps) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [text, setText] = useState('');
   const [files, setFiles] = useState<FileList | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,16 +32,6 @@ export default function TaskComments({ taskId }: TaskCommentsProps) {
       }
     };
     fetchComments();
-
-    const s = io();
-    setSocket(s);
-    s.emit('joinTask', String(taskId));
-    s.on('newTaskComment', (comment: TaskComment) => {
-      if (comment.task_id === taskId) {
-        setComments((prev) => [...prev, comment]);
-      }
-    });
-    return () => { s.disconnect(); };
   }, [taskId]);
 
   useEffect(() => {

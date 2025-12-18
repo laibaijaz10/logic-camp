@@ -20,6 +20,7 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
     name: user.name,
     email: user.email,
     role: user.role,
+    password: "", // Optional: only update if changed
   });
   const [loading, setLoading] = useState(false);
 
@@ -48,11 +49,17 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
     }
 
     try {
-      await onSave(user.id, {
-        ...form,
+      const updates: any = {
         name: form.name.trim(),
-        email: form.email.trim()
-      });
+        email: form.email.trim(),
+        role: form.role,
+      };
+
+      if (form.password.trim()) {
+        updates.password = form.password.trim();
+      }
+
+      await onSave(user.id, updates);
       onClose();
     } catch (err: any) {
       console.error("EditUserModal error:", err);
@@ -115,6 +122,18 @@ export default function EditUserModal({ user, onClose, onSave }: EditUserModalPr
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm mb-1">New Password (leave blank to keep current)</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
 
           {/* Save */}

@@ -3,12 +3,25 @@
 
 import React from "react";
 import { Bell, Search, User } from "lucide-react";
+import Image from "next/image";
 
 const Navbar: React.FC = () => {
   return (
     <nav className="w-full bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
-  {/* Search Bar */}
-  <div className="flex items-center gap-2 bg-gray-800 px-3 py-2 rounded-md w-1/3">
+      {/* Logo */}
+      <div className="flex items-center">
+        <Image
+          src="/logo.png"
+          alt="Logic Camp logo"
+          width={148}
+          height={148}
+          className="rounded-lg object-contain"
+          priority
+        />
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex items-center gap-2 bg-gray-800 px-3 py-2 rounded-md w-1/3">
     <Search size={18} className="text-gray-300" />
     <input
       type="text"

@@ -9,8 +9,7 @@ import useAdminData from "../hooks/useAdminData";
 function EditTaskPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const taskId = searchParams.get('taskId');
-  const goalId = searchParams.get('goalId');
+  const taskId = searchParams?.get('taskId');
   const { users } = useAdminData();
   
   const [formData, setFormData] = useState({
@@ -28,12 +27,12 @@ function EditTaskPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [task, setTask] = useState<any>(null);
 
-  // Redirect if no taskId or goalId
+  // Redirect if no taskId
   useEffect(() => {
-    if (!taskId || !goalId) {
+    if (!taskId) {
       router.push('/admin');
     }
-  }, [taskId, goalId, router]);
+  }, [taskId, router]);
 
   // Fetch task data
   useEffect(() => {
@@ -150,7 +149,7 @@ function EditTaskPageContent() {
     }));
   };
 
-  if (!taskId || !projectId) {
+  if (!taskId) {
     return null;
   }
 

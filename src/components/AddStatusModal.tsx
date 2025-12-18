@@ -11,7 +11,7 @@ interface AddStatusModalProps {
   onAddStatus: (status: StatusItem, insertIndex: number) => void;
   onDeleteStatus?: (statusId: number) => void;
   existingStatuses: StatusItem[];
-  entityType: 'project' | 'goal' | 'task';
+  entityType: 'project' | 'task';
 }
 
 export default function AddStatusModal({

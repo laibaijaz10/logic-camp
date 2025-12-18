@@ -8,6 +8,8 @@ export interface StatusItem {
   isDeletable?: boolean;
 }
 
+export type Status = StatusItem;
+
 export interface User {
   id: number;
   name: string;
@@ -34,7 +36,7 @@ export interface TeamMember {
   email: string;
   role: 'owner' | 'admin' | 'member' | 'viewer';
   joinedAt: Date;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 export interface Project {
@@ -54,19 +56,6 @@ export interface Project {
   updatedAt?: Date;
 }
 
-export interface Goal {
-  id: number;
-  title: string;
-  description?: string;
-  statuses?: StatusItem[] | null;
-  status_title: string;
-  project_id: number;
-  deadline?: Date;
-  tasks?: Task[];
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
 export interface Task {
   id: number;
   title: string;
@@ -76,10 +65,10 @@ export interface Task {
   deadline?: Date;
   expected_time: number; // in minutes
   spent_time: number; // in minutes
-  goal_id: number;
+  project_id: number;
   assigned_to_id?: number;
   assignedTo?: User;
-  goal?: Goal;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -132,7 +121,7 @@ export interface CreateTaskForm {
   dueDate?: string;
   expectedTime?: number;
   spentTime?: number;
-  goalId: number;
+  projectId: number;
 }
 
 export interface UpdateTaskForm extends Partial<CreateTaskForm> {
@@ -149,18 +138,6 @@ export interface CreateProjectForm {
 }
 
 export interface UpdateProjectForm extends Partial<CreateProjectForm> {
-  id: number;
-}
-
-export interface CreateGoalForm {
-  title: string;
-  description?: string;
-  statusTitle?: string;
-  projectId: number;
-  deadline?: string;
-}
-
-export interface UpdateGoalForm extends Partial<CreateGoalForm> {
   id: number;
 }
 

@@ -8,7 +8,6 @@ interface UserProfileData {
   name: string;
   email: string;
   role: string;
-  avatarUrl?: string;
   isActive: boolean;
   isApproved: boolean;
   createdAt: string;
@@ -23,10 +22,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '' });
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -105,102 +102,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
     }
   };
 
-  const handleAvatarUpload = async (file: File) => {
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Error',
-        description: 'Please select an image file',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'Error',
-        description: 'File size must be less than 5MB',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('avatar', file);
-
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/user/avatar', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProfile(prev => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
-        toast({
-          title: 'Success',
-          description: 'Avatar updated successfully'
-        });
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: 'Error',
-          description: errorData.error || 'Failed to upload avatar',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to upload avatar',
-        variant: 'destructive'
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleRemoveAvatar = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/user/avatar', {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        setProfile(prev => prev ? { ...prev, avatarUrl: undefined } : null);
-        toast({
-          title: 'Success',
-          description: 'Avatar removed successfully'
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to remove avatar',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      console.error('Error removing avatar:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to remove avatar',
-        variant: 'destructive'
-      });
-    }
-  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -282,27 +183,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
         </div>
       </div>
 
-      {/* Avatar Section */}
+      {/* Profile Section */}
       <div className="flex items-center space-x-6 mb-8">
-        <div className="relative">
-          <div className="w-20 h-20 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <svg className="w-8 h-8 text-white/40" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            )}
-          </div>
-          {uploading && (
-            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-            </div>
-          )}
+        <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center">
+          <svg className="w-8 h-8 text-white/40" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
         </div>
         <div className="flex-1">
           <h3 className="text-xl font-semibold text-white mb-2">{profile.name}</h3>
@@ -315,30 +201,6 @@ const UserProfile: React.FC<UserProfileProps> = ({ onClose }) => {
             </span>
           </div>
         </div>
-        <div className="flex flex-col space-y-2">
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors disabled:opacity-50"
-          >
-            Change Avatar
-          </button>
-          {profile.avatarUrl && (
-            <button
-              onClick={handleRemoveAvatar}
-              className="text-sm text-red-400 hover:text-red-300 transition-colors"
-            >
-              Remove Avatar
-            </button>
-          )}
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={(e) => e.target.files?.[0] && handleAvatarUpload(e.target.files[0])}
-          className="hidden"
-        />
       </div>
 
       {/* Profile Information */}

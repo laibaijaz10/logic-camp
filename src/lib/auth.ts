@@ -33,17 +33,17 @@ export async function verifyToken(request: NextRequest): Promise<AuthResult> {
     if (!token) {
       token = request.cookies.get('authToken')?.value;
     }
-    
+
     if (!token) {
       return { success: false, error: 'No token provided' };
     }
 
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-super-secret-jwt-key");
     const { payload } = await jwtVerify(token, secret);
 
     // Handle both userId and id formats for backward compatibility
     const userId = payload.userId || payload.id;
-    
+
     // Ensure payload has all required fields
     if (
       typeof userId !== "number" ||

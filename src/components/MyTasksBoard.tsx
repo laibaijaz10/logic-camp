@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { getProjects } from '@/services/projectService';
-import { getGoalsByProject } from '@/services/goalService';
-import { getTasksByGoal, updateTaskStatus } from '@/services/taskService';
-import { useUser as useUserContext } from '@/lib/context/UserContext';
+import React, { useEffect, useMemo, useState } from "react";
+import { getProjects } from "@/services/projectService";
+import { getTasksByProject, updateTaskStatus } from "@/services/taskService";
+import { useUser as useUserContext } from "@/lib/context/UserContext";
 
 type SimpleTask = {
   id: number;
@@ -36,22 +35,25 @@ export default function MyTasksBoard() {
     const load = async () => {
       setLoading(true);
       try {
-        const p = await getProjects();
+        const projects = await getProjects();
         const all: SimpleTask[] = [];
-        for (const proj of p) {
+
+        for (const proj of projects) {
           try {
-            const goals = await getGoalsByProject(proj.id);
-            for (const goal of (Array.isArray((goals as any)?.goals) ? (goals as any).goals : goals)) {
-              try {
-                const tRes = await getTasksByGoal(goal.id);
-                const tArr = (tRes as any)?.tasks ?? tRes;
-                if (Array.isArray(tArr)) all.push(...tArr);
-              } catch {}
+            const res = await getTasksByProject(proj.id);
+            const tArr = (res as any)?.tasks ?? res;
+            if (Array.isArray(tArr)) {
+              all.push(...(tArr as SimpleTask[]));
             }
-          } catch {}
+          } catch {
+            // Ignore errors per project to keep the board usable in demo
+          }
         }
+
         const uid = (user as any)?.id;
-        const mine = uid ? all.filter((t) => (t.assigned_to_id || t.assignedTo?.id) === uid) : all;
+        const mine = uid
+          ? all.filter((t) => (t.assigned_to_id || t.assignedTo?.id) === uid)
+          : all;
         setTasks(mine);
       } finally {
         setLoading(false);

@@ -3,6 +3,7 @@
 import { LogOut, Bell, Settings } from "lucide-react";
 import Link from "next/link";
 import { ReactNode } from "react";
+import Image from "next/image";
 import ProfileDropdown from './ProfileDropdown';
 import { useAuth } from "@/hooks/useAuth";
 
@@ -27,10 +28,15 @@ export default function UserHeader({ children }: UserHeaderProps) {
       <div className="px-4 md:px-6 py-3 flex items-center justify-between">
         {/* Left: Logo lockup */}
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_24px_rgba(99,102,241,0.55)]" />
+          <Image
+            src="/logo.png"
+            alt="Logic Camp logo"
+            width={132}
+            height={132}
+            className="rounded-lg object-contain"
+            priority
+          />
           <div className="text-sm md:text-base font-bold tracking-wide">
-            <span className="text-indigo-400">Logic</span>
-            <span className="text-purple-400">Camp</span>
           </div>
         </div>
 

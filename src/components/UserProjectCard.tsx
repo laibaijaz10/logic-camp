@@ -16,9 +16,8 @@ export default function UserProjectCard({ id, name, description = '', endDate, m
     <Link href={`/projects/${id}`} className="block">
       <div className="group cursor-pointer text-left w-full rounded-2xl border border-white/10 
         bg-gradient-to-br from-slate-900/70 to-slate-800/40 backdrop-blur-xl p-5 
-        hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(88,101,242,0.35)] 
-        transition-all duration-300 ease-out overflow-hidden">
-        <h3 className="font-semibold text-base leading-tight line-clamp-1 text-white group-hover:text-indigo-300 transition">
+        overflow-hidden">
+        <h3 className="font-semibold text-base leading-tight line-clamp-1 text-white">
           {name}
         </h3>
         {description && (

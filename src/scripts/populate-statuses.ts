@@ -1,74 +1,69 @@
-import { initializeDatabase } from '../lib/init-db';
-import { Status } from '../models';
+import { Task, Project } from "../models";
+import { StatusItem } from "../types";
 
-async function populateStatuses() {
+// Sample statuses to populate
+const defaultStatuses: StatusItem[] = [
+  {
+    id: 1,
+    title: "To Do",
+    color: "#6B7280"
+  },
+  {
+    id: 2,
+    title: "In Progress", 
+    color: "#3B82F6"
+  },
+  {
+    id: 3,
+    title: "Review",
+    color: "#F59E0B"
+  },
+  {
+    id: 4,
+    title: "Done",
+    color: "#10B981"
+  }
+];
+
+export async function populateStatuses() {
   try {
-    console.log('Initializing database...');
-    await initializeDatabase();
-    console.log('Database initialized');
-
-    console.log('Populating statuses table...');
-    
-    const defaultStatuses = [
-      {
-        name: 'todo',
-        description: 'Task/Project/Goal is pending',
-        color: '#6B7280',
-        is_default: true,
-      },
-      {
-        name: 'inProgress',
-        description: 'Task/Project/Goal is in progress',
-        color: '#3B82F6',
-        is_default: true,
-      },
-      {
-        name: 'testing',
-        description: 'Task/Project/Goal is being tested',
-        color: '#F59E0B',
-        is_default: true,
-      },
-      {
-        name: 'review',
-        description: 'Task/Project/Goal is under review',
-        color: '#8B5CF6',
-        is_default: true,
-      },
-      {
-        name: 'done',
-        description: 'Task/Project/Goal is completed',
-        color: '#10B981',
-        is_default: true,
-      },
-    ];
-
-    for (const statusData of defaultStatuses) {
-      const [status, created] = await Status.findOrCreate({
-        where: { name: statusData.name },
-        defaults: statusData,
-      });
-      
-      if (created) {
-        console.log(`✅ Created status: ${status.name}`);
-      } else {
-        console.log(`⚠️  Status already exists: ${status.name}`);
+    // Get all tasks and projects that don't have statuses
+    const tasks = await Task.findAll({
+      where: {
+        statuses: null
       }
-    }
+    });
 
-    console.log('✅ Status population completed successfully!');
+    const projects = await Project.findAll({
+      where: {
+        statuses: null
+      }
+    });
+
+    // Update tasks with default statuses
+    await Promise.all(
+      tasks.map(task => 
+        task.update({ statuses: defaultStatuses })
+      )
+    );
+
+    // Update projects with default statuses
+    await Promise.all(
+      projects.map(project => 
+        project.update({ statuses: defaultStatuses })
+      )
+    );
+
+    console.log(`Populated statuses for ${tasks.length} tasks and ${projects.length} projects`);
   } catch (error) {
-    console.error('❌ Failed to populate statuses:', error);
+    console.error("Error populating statuses:", error);
     throw error;
   }
 }
 
-// Run the script
-populateStatuses()
-  .then(() => {
-    console.log('Script completed');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Script failed:', error);
-    process.exit(1);
-  });
+// Run if called directly
+if (require.main === module) {
+  populateStatuses()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}

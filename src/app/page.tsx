@@ -14,13 +14,7 @@ export default function Home() {
 
   return (
     <Dashboard
-      userData={{
-        ...userData,
-        password: '',
-        role: 'employee',
-        is_active: true,
-        is_approved: true,
-      }}
+      userData={userData}
     />
   );
 }

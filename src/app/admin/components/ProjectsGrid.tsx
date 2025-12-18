@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import ProjectCard from "./ProjectCard";
 import DeleteProjectModal from "./DeleteProjectModal";
-// Removed task-related imports since tasks are now managed under goals
 
 interface ProjectsGridProps {
   projects: any[];
@@ -26,7 +25,6 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
   const router = useRouter();
 
   const [deleteProjectModal, setDeleteProjectModal] = useState<{ isOpen: boolean; project: any | null }>({ isOpen: false, project: null });
-  // Removed task-related state since tasks are now managed under goals
   const [message, setMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState(search);
 
@@ -93,7 +91,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
             {total > 0 ? `${total} ${searchQuery ? 'filtered' : 'total'} projects` : 'No projects yet'}
           </p>
         </div>
-        
+
         {/* Page indicator */}
         {totalPages > 1 && (
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-600/50">
@@ -151,13 +149,14 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
           </div>
         ) : (
           projects.map((project, idx) => (
-            <ProjectCard
-              key={project.id}
-              project={project}
-              index={(page - 1) * perPage + idx}
-              onOpenProject={() => handleOpenDeleteProject(project)}
-              onEditProject={() => editProject(project)}
-            />
+            <div key={project.id} className="h-full">
+              <ProjectCard
+                project={project}
+                index={(page - 1) * perPage + idx}
+                onOpenProject={() => handleOpenDeleteProject(project)}
+                onEditProject={() => editProject(project)}
+              />
+            </div>
           ))
         )}
       </div>
@@ -174,7 +173,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
             <span className="font-semibold text-white">{total}</span>
             <span>projects</span>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Previous button */}
             <button
@@ -187,7 +186,7 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
               </svg>
               Previous
             </button>
-            
+
             {/* Page numbers */}
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -201,23 +200,22 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
                 } else {
                   pageNum = page - 2 + i;
                 }
-                
+
                 return (
                   <button
                     key={pageNum}
                     onClick={() => onChangePage && onChangePage(pageNum)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
-                      pageNum === page
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${pageNum === page
                         ? 'bg-gradient-to-r from-purple-600 to-cyan-600 text-white border border-purple-500/50 shadow-lg'
                         : 'border border-slate-600/50 bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 hover:border-slate-500/50'
-                    }`}
+                      }`}
                   >
                     {pageNum}
                   </button>
                 );
               })}
             </div>
-            
+
             {/* Next button */}
             <button
               onClick={() => onChangePage && onChangePage(page + 1)}
@@ -240,8 +238,6 @@ export default function ProjectsGrid({ projects, loadingProjects, editProject, d
         onConfirm={handleConfirmDeleteProject}
         projectName={deleteProjectModal.project?.name || ""}
       />
-
-      {/* Removed task-related modals since tasks are now managed under goals */}
     </div>
   );
 }

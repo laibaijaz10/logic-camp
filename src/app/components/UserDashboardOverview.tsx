@@ -1,15 +1,14 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 import { getProjects } from '@/services/projectService';
-import { getGoalsByProject } from '@/services/goalService';
-import { getTasksByGoal } from '@/services/taskService';
+import { getTasksByProject } from '@/services/taskService';
 import { useUser as useUserContext } from '@/lib/context/UserContext';
-import { 
-  FolderOpen, 
-  CheckSquare, 
-  Clock, 
-  AlertCircle, 
-  TrendingUp, 
+import {
+  FolderOpen,
+  CheckSquare,
+  Clock,
+  AlertCircle,
+  TrendingUp,
   UsersRound,
   Target,
   Calendar
@@ -31,19 +30,16 @@ export default function UserDashboardOverview({ loading = false }: UserDashboard
       try {
         const p = await getProjects();
         setProjects(p);
-        // Fetch tasks via goals per project and filter by assignee
+        // Fetch tasks directly by project
         const tasks: any[] = [];
         for (const proj of p) {
           try {
-            const goals = await getGoalsByProject(proj.id);
-            for (const goal of (Array.isArray((goals as any)?.goals) ? (goals as any).goals : goals)) {
-              try {
-                const tRes = await getTasksByGoal(goal.id);
-                const tArr = (tRes as any)?.tasks ?? tRes;
-                tasks.push(...(Array.isArray(tArr) ? tArr : []));
-              } catch {}
-            }
-          } catch {}
+            const tRes = await getTasksByProject(proj.id);
+            const tArr = (tRes as any)?.tasks ?? tRes;
+            tasks.push(...(Array.isArray(tArr) ? tArr : []));
+          } catch (e) {
+            console.error(`Failed to load tasks for project ${proj.id}:`, e);
+          }
         }
         const uid = (user as any)?.id;
         const mine = uid ? tasks.filter((t) => (t.assigned_to_id || t.assignedTo?.id) === uid) : tasks;
@@ -79,7 +75,7 @@ export default function UserDashboardOverview({ loading = false }: UserDashboard
       const now = new Date();
       return d < now && !completed;
     }).length;
-    
+
     return { totalProjects, pending, inProgress, completed, upcomingDeadlines, overdue };
   }, [projects, myTasks]);
 
@@ -119,8 +115,8 @@ export default function UserDashboardOverview({ loading = false }: UserDashboard
   const quickMetrics = [
     {
       label: 'Completion Rate',
-      value: (stats.pending + stats.inProgress + stats.completed) > 0 
-        ? `${Math.round((stats.completed / (stats.pending + stats.inProgress + stats.completed)) * 100)}%` 
+      value: (stats.pending + stats.inProgress + stats.completed) > 0
+        ? `${Math.round((stats.completed / (stats.pending + stats.inProgress + stats.completed)) * 100)}%`
         : '0%',
       icon: TrendingUp,
       color: 'text-green-400'
@@ -178,7 +174,7 @@ export default function UserDashboardOverview({ loading = false }: UserDashboard
             >
               {/* Background Pattern */}
               <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50" />
-              
+
               {/* Content */}
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-4">
@@ -195,7 +191,7 @@ export default function UserDashboardOverview({ loading = false }: UserDashboard
                     )}
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-semibold text-white mb-1">{card.title}</h3>
                   <p className="text-sm text-slate-300">{card.subtitle}</p>
@@ -225,53 +221,6 @@ export default function UserDashboardOverview({ loading = false }: UserDashboard
             </div>
           );
         })}
-      </div>
-
-      {/* Recent Activity Section */}
-      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl">
-        <h2 className="text-lg font-semibold text-white mb-3">Recent Activity</h2>
-        <div className="space-y-3">
-          {stats.completed > 0 && (
-            <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <div className="flex-1">
-                <div className="text-sm text-white">Completed {stats.completed} tasks</div>
-                <div className="text-xs text-slate-400">Great progress on your projects</div>
-              </div>
-              <div className="text-xs text-slate-500">{new Date().toLocaleTimeString()}</div>
-            </div>
-          )}
-          {stats.upcomingDeadlines > 0 && (
-            <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-              <div className="flex-1">
-                <div className="text-sm text-white">{stats.upcomingDeadlines} deadlines approaching</div>
-                <div className="text-xs text-slate-400">Next 7 days</div>
-              </div>
-              <div className="text-xs text-slate-500">{new Date().toLocaleTimeString()}</div>
-            </div>
-          )}
-          {stats.overdue > 0 && (
-            <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-              <div className="w-2 h-2 bg-red-500 rounded-full" />
-              <div className="flex-1">
-                <div className="text-sm text-white">{stats.overdue} overdue tasks</div>
-                <div className="text-xs text-slate-400">Need attention</div>
-              </div>
-              <div className="text-xs text-slate-500">{new Date().toLocaleTimeString()}</div>
-            </div>
-          )}
-          {stats.completed === 0 && stats.upcomingDeadlines === 0 && stats.overdue === 0 && (
-            <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
-              <div className="flex-1">
-                <div className="text-sm text-white">Welcome to your dashboard</div>
-                <div className="text-xs text-slate-400">Start working on your projects and tasks</div>
-              </div>
-              <div className="text-xs text-slate-500">{new Date().toLocaleTimeString()}</div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

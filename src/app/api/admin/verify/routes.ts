@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { payload } = await jwtVerify(
       token,
-      new TextEncoder().encode(process.env.JWT_SECRET || "default_secret")
+      new TextEncoder().encode(process.env.JWT_SECRET || "your-super-secret-jwt-key")
     );
     const decoded = payload;
 

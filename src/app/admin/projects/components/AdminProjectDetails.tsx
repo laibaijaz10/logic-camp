@@ -4,17 +4,18 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateProjectStatus } from '@/services/projectService';
 import { formatDate } from '@/utils/helpers';
-import { Project } from '../../hooks/useAdminData';
+import { db } from '@/lib/mockData';
+import toast from 'react-hot-toast';
+import { Project, StatusItem } from '@/types';
 import { Plus, Save, Edit3, X, Users, Calendar, FolderKanban, CheckCircle, Clock, Shield } from 'lucide-react';
-import GoalCard from '../../components/GoalCard';
-import { getGoalsByProject, createGoal, updateGoalStatus } from '@/services/goalService';
+import TaskCard from '@/components/TaskCard';
+import { getTasksByProject, createTask, updateTaskStatus, deleteTask } from '@/services/taskService';
 import { useUser } from '@/lib/context/UserContext';
-import { StatusItem } from '@/types';
 import StatusDropdown from '@/components/StatusDropdown';
 
 interface AdminProjectDetailsProps {
   project: Project;
-  initialGoals?: any[];
+  initialTasks?: any[];
 }
 
 function getStatusColor(status: string) {
@@ -38,18 +39,18 @@ type EditableProject = Partial<{
 
 type TeamOption = { id: number; name: string };
 
-type GoalForm = { title: string; description: string; deadline?: string; status?: string };
+type TaskForm = { title: string; description: string; deadline?: string; status?: string };
 
-type StatusForm = { name: string; description: string; color: string; entity_type: 'project' | 'goal' | 'task' };
+type StatusForm = { name: string; description: string; color: string; entity_type: 'project' | 'task' };
 
-export default function AdminProjectDetails({ project, initialGoals = [] }: AdminProjectDetailsProps) {
+export default function AdminProjectDetails({ project, initialTasks = [] }: AdminProjectDetailsProps) {
   const router = useRouter();
   const { user } = useUser();
   const canEdit = useMemo(() => {
     // For admin pages, assume user can edit if they can access the page
     // This is a fallback in case user context isn't working properly
     if (!user) return true;
-    
+
     const role = (user?.role || '').toString().toLowerCase();
     const isPrivileged = role === 'admin' || role === 'teamlead' || role === 'team_lead' || role === 'team lead'; // cSpell:ignore teamlead
     const isOwner = !!(user as any)?.id && ((project as any)?.createdById === (user as any).id || (project as any)?.ownerId === (user as any).id);
@@ -66,7 +67,7 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
     teamId: (project as any).team_id || (project as any).team?.id,
   });
   const [saving, setSaving] = useState(false);
-  // Custom statuses (project-level), same approach as Create Project section
+  // Custom statuses (project-level)
   const [customStatuses, setCustomStatuses] = useState<StatusItem[]>(
     Array.isArray((project as any).statuses) ? ((project as any).statuses as StatusItem[]) : []
   );
@@ -74,42 +75,33 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
   const [teams, setTeams] = useState<TeamOption[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>(Array.isArray((project as any).members) ? (project as any).members : []);
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false);
-  const [goals, setGoals] = useState<any[]>(initialGoals);
-  const [goalForm, setGoalForm] = useState<GoalForm>({ title: '', description: '', deadline: '', status: 'todo' });
-  const [loadingGoals, setLoadingGoals] = useState(false);
-  
+  const [tasks, setTasks] = useState<any[]>(initialTasks);
+  const [taskForm, setTaskForm] = useState<TaskForm>({ title: '', description: '', deadline: '', status: 'todo' });
+  const [loadingTasks, setLoadingTasks] = useState(false);
+
   // Status management state
   const [statuses, setStatuses] = useState<any[]>([]);
   const [loadingStatuses, setLoadingStatuses] = useState(false);
 
   useEffect(() => {
-    // Teams for assignment
-    fetch('/api/teams')
-      .then((r) => r.json())
-      .then((data) => setTeams(Array.isArray(data) ? data : (data?.teams || [])))
-      .catch(() => setTeams([]));
+    // Mock Teams load
+    const mockTeams = db.getTeams().map(t => ({ id: t.id, name: t.name }));
+    setTeams(mockTeams);
   }, []);
 
-  // Load statuses for different entity types (read-only here)
+  // Load statuses for different entity types
   useEffect(() => {
     const loadStatuses = async () => {
       setLoadingStatuses(true);
       try {
-        const [projectStatuses, goalStatuses, taskStatuses] = await Promise.all([
-          fetch('/api/statuses?entity_type=project').then(r => r.json()),
-          fetch('/api/statuses?entity_type=goal').then(r => r.json()),
-          fetch('/api/statuses?entity_type=task').then(r => r.json())
-        ]);
-        
-        setStatuses([
-          ...(Array.isArray(projectStatuses) ? projectStatuses : []),
-          ...(Array.isArray(goalStatuses) ? goalStatuses : []),
-          ...(Array.isArray(taskStatuses) ? taskStatuses : [])
-        ]);
-        
-        // If project has custom statuses, use them; otherwise use the loaded project statuses
+        // Use db to get statuses or mock them
+        const mockProjectStatuses = [{ id: 1, title: 'Planning', entity_type: 'project' }, { id: 2, title: 'Active', entity_type: 'project' }];
+        const mockTaskStatuses = [{ id: 3, title: 'Todo', entity_type: 'task' }, { id: 4, title: 'Done', entity_type: 'task' }];
+
+        setStatuses([...mockProjectStatuses, ...mockTaskStatuses]);
+
         if (!Array.isArray((project as any).statuses) || (project as any).statuses.length === 0) {
-          setCustomStatuses(Array.isArray(projectStatuses) ? projectStatuses : []);
+          setCustomStatuses(mockProjectStatuses as any);
         }
       } catch (error) {
         console.error('Failed to load statuses:', error);
@@ -117,7 +109,7 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
         setLoadingStatuses(false);
       }
     };
-    
+
     loadStatuses();
   }, [project]);
 
@@ -127,67 +119,22 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
   }, [canEdit]);
 
 
-  // Goals are provided by server to avoid client refetch/re-render
-
-  // Fetch team members when team selection changes (realtime update)
+  // Fetch team members
   useEffect(() => {
     const currentTeamId = form.teamId || (project as any).teamId || (project as any).team?.id;
     if (!currentTeamId) {
       setTeamMembers([]);
       return;
     }
-    let isCancelled = false;
-    const loadMembers = async () => {
-      try {
-        setLoadingTeamMembers(true);
-        const res = await fetch(`/api/teams/${currentTeamId}/members`);
-        if (!res.ok) throw new Error('Failed to load team members');
-        const data = await res.json();
-        if (!isCancelled) setTeamMembers(Array.isArray(data) ? data : (data.members || []));
-      } catch (_e) {
-        if (!isCancelled) setTeamMembers([]);
-      } finally {
-        if (!isCancelled) setLoadingTeamMembers(false);
-      }
-    };
-    loadMembers();
-    return () => { isCancelled = true; };
+    const team = db.getTeams().find(t => t.id === currentTeamId);
+    setTeamMembers(team ? team.members || [] : []);
   }, [form.teamId, project]);
 
   const handleProjectStatusChange = async (newStatus: string) => {
     try {
-      console.log('Updating project status to:', newStatus);
-      
-      // Update the project status via the API
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-      
-      const res = await fetch(`/api/projects/${project.id}`, {
-        method: 'PATCH',
-        headers,
-        credentials: 'include',
-        cache: 'no-store',
-        body: JSON.stringify({
-          statusTitle: newStatus
-        })
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error('API error:', errorData);
-        throw new Error(errorData.error || 'Failed to update project status');
-      }
-      
-      const result = await res.json();
-      console.log('Status update successful:', result);
-      
-      // Update local state
+      db.updateProject(project.id, { status_title: newStatus });
       setProjectStatus(newStatus);
       setForm((f) => ({ ...f, status: newStatus }));
-      
-      // Refresh the page to ensure UI is updated
-      router.refresh();
     } catch (error) {
       console.error('Failed to update project status', error);
     }
@@ -196,76 +143,70 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
   const handleSave = async () => {
     try {
       setSaving(true);
-      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-      // Persist updates via API route directly to support customStatuses
-      const res = await fetch(`/api/projects/${project.id}`, {
-        method: 'PATCH',
-        headers,
-        credentials: 'include',
-        cache: 'no-store',
-        body: JSON.stringify({
-          name: form.name,
-          description: form.description,
-          startDate: (form as any).startDate || undefined,
-          endDate: form.endDate || undefined,
-          statusTitle: form.status,
-          teamId: form.teamId,
-          customStatuses: customStatuses.length > 0 ? customStatuses : undefined,
-        })
+      db.updateProject(project.id, {
+        name: form.name,
+        description: form.description,
+        end_date: form.endDate ? new Date(form.endDate) : undefined,
+        status_title: form.status,
+        team_id: form.teamId,
       });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to update project');
-      }
       setEditing(false);
-      router.refresh();
+      toast.success("Project updated successfully");
     } catch (e) {
       console.error('Failed to update project', e);
+      toast.error("Failed to update project");
     } finally {
       setSaving(false);
     }
   };
 
-  const createGoalInline = async () => {
-    if (!goalForm.title.trim()) return;
+  const createTaskInline = async () => {
+    if (!taskForm.title.trim()) return;
     try {
       const payload = {
-        title: goalForm.title.trim(),
-        description: goalForm.description?.trim() || undefined,
-        deadline: goalForm.deadline || undefined,
-        statusTitle: goalForm.status || 'todo',
+        title: taskForm.title.trim(),
+        description: taskForm.description?.trim() || undefined,
+        deadline: taskForm.deadline || undefined,
+        statusTitle: taskForm.status || 'todo',
         projectId: project.id,
         statuses: customStatuses && customStatuses.length > 0 ? customStatuses : undefined,
       } as any;
-      const res = await createGoal(payload);
-      const created = (res as any)?.goal || res;
-      setGoalForm({ title: '', description: '', deadline: '', status: 'todo' });
+      const res = await createTask(payload);
+      const created = (res as any)?.task || res;
+      setTaskForm({ title: '', description: '', deadline: '', status: 'todo' });
       // Optimistically append without refetch
-      setGoals((g) => [{ ...created }, ...g]);
+      setTasks((t) => [{ ...created }, ...t]);
     } catch (e) {
-      console.error('Failed to create goal', e);
+      console.error('Failed to create task', e);
     }
   };
 
-  const toggleGoalStatus = async (goal: any) => {
-    const newStatus = goal.completed ? 'todo' : 'completed';
+  const toggleTaskStatus = async (task: any) => {
+    const newStatus = task.completed ? 'todo' : 'completed';
     try {
       // Find the status title from the statuses
-      const statusObj = statuses.find(s => s.title === newStatus && s.entity_type === 'goal');
+      const statusObj = statuses.find(s => s.title === newStatus && s.entity_type === 'task');
       if (statusObj) {
-        await updateGoalStatus(goal.id, statusObj.title);
-        const list = await getGoalsByProject(project.id);
-        const arr = Array.isArray(list) ? list : (list as any)?.goals || [];
-        setGoals(arr);
+        await updateTaskStatus(task.id, statusObj.title);
+        const list = await getTasksByProject(project.id);
+        const arr = Array.isArray(list) ? list : (list as any)?.tasks || [];
+        setTasks(arr);
       }
     } catch (e) {
-      console.error('Failed to update goal status', e);
+      console.error('Failed to update task status', e);
     }
   };
 
-  const getStatusesByEntity = (entityType: 'project' | 'goal' | 'task') => {
+  const handleDeleteTask = async (taskId: number) => {
+    try {
+      await deleteTask(taskId);
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    } catch (e) {
+      console.error('Failed to delete task', e);
+    }
+  };
+
+  const getStatusesByEntity = (entityType: 'project' | 'task') => {
     return statuses.filter(s => s.entity_type === entityType);
   };
 
@@ -308,11 +249,11 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
 
   const normalizeStatus = (status?: string | { title: string; color?: string }): { key: keyof typeof STATUS_CONFIG; label: string } => {
     if (!status) return { key: 'default', label: 'todo' };
-    
+
     // Handle both string and object status formats
     const statusName = typeof status === 'string' ? status : status.title;
     if (!statusName) return { key: 'default', label: 'todo' };
-    
+
     const raw = statusName.trim().toLowerCase();
     if (['done', 'completed', 'complete', 'finished'].includes(raw)) return { key: 'completed', label: 'done' };
     if (['doing', 'in-progress', 'in progress', 'progress', 'active', 'inprogress'].includes(raw)) return { key: 'in-progress', label: 'doing' };
@@ -425,7 +366,7 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
             {editing ? (
               <input
                 type="date"
-                value={(form as any).startDate || (project.start_date ? new Date(project.start_date as any).toISOString().slice(0,10) : '') as any}
+                value={(form as any).startDate || (project.start_date ? new Date(project.start_date as any).toISOString().slice(0, 10) : '') as any}
                 onChange={(e) => setForm({ ...form, ...(e.target.value ? { startDate: e.target.value } : {}) })}
                 className="mt-1 bg-gray-800/60 text-white border border-white/10 rounded-xl px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
@@ -463,79 +404,70 @@ export default function AdminProjectDetails({ project, initialGoals = [] }: Admi
         </div>
       </section>
 
-      {/* Goals */}
+      {/* Tasks */}
       <section className="bg-gray-900/90 border border-white/20 rounded-xl p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-white">Goals</h2>
-          {canEdit && (
-            <button
-              onClick={() => router.push(`/admin/projects/${project.id}/goals/new`)}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg flex items-center gap-1.5 transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Full Goal Page
-            </button>
-          )}
+          <h2 className="text-xl font-semibold text-white">Tasks</h2>
         </div>
 
         {canEdit && (
           <div className="bg-gradient-to-br from-slate-800/60 via-slate-700/30 to-slate-800/40 border border-indigo-500/30 rounded-xl p-4 shadow-lg">
             <div className="flex items-center gap-2 mb-3">
               <Plus className="h-4 w-4 text-indigo-400" />
-              <h3 className="text-sm font-semibold text-indigo-300">Create New Goal</h3>
+              <h3 className="text-sm font-semibold text-indigo-300">Create New Task</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <input
-                placeholder="Goal title *"
-                value={goalForm.title}
-                onChange={(e) => setGoalForm({ ...goalForm, title: e.target.value })}
+                placeholder="Task title *"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
                 className="bg-gray-800/60 text-gray-100 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
               <input
                 placeholder="Description (optional)"
-                value={goalForm.description}
-                onChange={(e) => setGoalForm({ ...goalForm, description: e.target.value })}
+                value={taskForm.description}
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                 className="bg-gray-800/60 text-gray-100 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
               <input
                 type="date"
-                value={goalForm.deadline || ''}
-                onChange={(e) => setGoalForm({ ...goalForm, deadline: e.target.value })}
+                value={taskForm.deadline || ''}
+                onChange={(e) => setTaskForm({ ...taskForm, deadline: e.target.value })}
                 className="bg-gray-800/60 text-gray-100 border border-white/10 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
               <StatusDropdown
                 statuses={customStatuses}
                 onStatusesChange={setCustomStatuses}
-                selectedStatus={goalForm.status}
-                onStatusSelect={(status) => setGoalForm({ ...goalForm, status })}
-                entityType="goal"
+                selectedStatus={taskForm.status || 'todo'}
+                onStatusSelect={(status) => setTaskForm({ ...taskForm, status })}
+                entityType="task"
               />
             </div>
             <div className="mt-3">
               <button
-                onClick={createGoalInline}
-                disabled={!goalForm.title.trim()}
+                onClick={createTaskInline}
+                disabled={!taskForm.title.trim()}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors"
               >
                 <Plus className="h-4 w-4" />
-                Add Goal
+                Add Task
               </button>
             </div>
           </div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loadingGoals ? (
-            <div className="text-gray-400">Loading goals...</div>
-          ) : !Array.isArray(goals) || goals.length === 0 ? (
-            <div className="text-gray-400">No goals yet.</div>
+          {loadingTasks ? (
+            <div className="text-gray-400">Loading tasks...</div>
+          ) : !Array.isArray(tasks) || tasks.length === 0 ? (
+            <div className="text-gray-400">No tasks yet.</div>
           ) : (
-            goals.map((goal, idx) => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                index={idx}
-                onStatusChange={canEdit ? toggleGoalStatus : undefined}
+            tasks.map((task, idx) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onUpdateStatus={toggleTaskStatus}
+                onDeleteTask={handleDeleteTask}
               />
             ))
           )}

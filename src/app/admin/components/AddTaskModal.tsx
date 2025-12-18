@@ -3,15 +3,16 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import toast from "react-hot-toast";
+import { db } from "@/lib/mockData";
 
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  goalId: number;
+  projectId: number;
   onTaskAdded?: () => void;
 }
 
-export default function AddTaskModal({ isOpen, onClose, goalId, onTaskAdded }: AddTaskModalProps) {
+export default function AddTaskModal({ isOpen, onClose, projectId, onTaskAdded }: AddTaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("medium");
@@ -34,25 +35,16 @@ export default function AddTaskModal({ isOpen, onClose, goalId, onTaskAdded }: A
     }
 
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          priority,
-          dueDate: dueDate || null,
-          goalId,
-        }),
+      db.createTask({
+        title: title.trim(),
+        description: description.trim(),
+        status_title: 'To Do',
+        project_id: projectId,
+        priority: priority as any,
+        deadline: dueDate ? new Date(dueDate) : undefined,
+        expected_time: 0,
+        spent_time: 0,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create task');
-      }
 
       toast.success(`Task "${title}" created successfully!`);
       setTitle("");

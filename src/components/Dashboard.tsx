@@ -3,13 +3,12 @@ import React from 'react';
 import UserHeader from '@/app/components/UserHeader';
 import ProjectsSection from '@/components/ProjectsSection';
 import TasksSection from '@/components/TasksSection';
-import TaskComments from '@/components/TaskComments';
+
 import { useEffect, useState } from 'react';
 import { getProjects } from '@/services/projectService';
-import { getGoalsByProject } from '@/services/goalService';
-import { getTasksByGoal } from '@/services/taskService';
+import { getTasksByProject } from '@/services/taskService';
 import UserSidebar from '@/app/components/UserSidebar';
-import MessagesPage from '@/app/messages/page';
+
 import BoardSection from '@/components/BoardSection';
 import MyOverview from '@/components/MyOverview';
 import MyTasksBoard from '@/components/MyTasksBoard';
@@ -33,7 +32,6 @@ type DashboardProps = {
 export default function Dashboard({ userData }: DashboardProps) {
   const [projects, setProjects] = useState<any[]>(userData.projects || []);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [goals, setGoals] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activeSection, setActiveSection] = useState('dashboard');
   const { user, setUser } = useUserContext();
@@ -71,31 +69,21 @@ export default function Dashboard({ userData }: DashboardProps) {
           const p = await getProjects();
           setProjects(p);
         }
-      } catch {}
+      } catch { }
     };
     load();
   }, []);
 
   useEffect(() => {
-    const loadGoalsAndTasks = async () => {
+    const loadTasks = async () => {
       if (!selectedProjectId) return;
       try {
-        const g = await getGoalsByProject(selectedProjectId);
-        setGoals(g);
-        // Flatten tasks for all goals
-        const allTasks: any[] = [];
-        for (const goal of g) {
-          try {
-            const t = await getTasksByGoal(goal.id);
-            // API returns { tasks }, normalize
-            const normalized = (t.tasks ?? t) as any[];
-            allTasks.push(...normalized);
-          } catch {}
-        }
-        setTasks(allTasks);
-      } catch {}
+        const t = await getTasksByProject(selectedProjectId);
+        const normalized = (t.tasks ?? t) as any[];
+        setTasks(normalized);
+      } catch { }
     };
-    loadGoalsAndTasks();
+    loadTasks();
   }, [selectedProjectId]);
 
   const renderContent = () => {
@@ -152,18 +140,13 @@ export default function Dashboard({ userData }: DashboardProps) {
               <TeamsSection
                 teams={teams as any}
                 loading={loadingTeams}
-                onDeleteTeam={async () => {}}
+                onDeleteTeam={async () => { }}
                 onRefreshTeams={() => { (fetchTeams as any)?.(1); }}
               />
             </div>
           </div>
         );
-      case 'messages':
-        return (
-          <div className="space-y-6">
-            <MessagesPage />
-          </div>
-        );
+
       default:
         return <UserDashboardOverview />;
     }
@@ -172,14 +155,14 @@ export default function Dashboard({ userData }: DashboardProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="flex min-h-screen">
-        <UserSidebar 
-          activeSection={activeSection} 
+        <UserSidebar
+          activeSection={activeSection}
           onSectionChange={setActiveSection}
         />
 
         <main className="flex-1 lg:ml-80 transition-all duration-300 animate-fadeIn">
           <UserHeader />
-          
+
           <div className="px-2 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8">
             {renderContent()}
           </div>

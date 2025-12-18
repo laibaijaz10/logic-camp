@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDefaultStatuses } from '@/services/statusService';
 
-// GET /api/statuses?entity_type=project|goal|task
+// GET /api/statuses?entity_type=project|task
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const entityType = (searchParams.get('entity_type') || 'project') as 'project' | 'goal' | 'task';
+    const entityType = (searchParams.get('entity_type') || 'project') as 'project' | 'task';
 
     // Unified defaults for all entity types
     const defaults = [
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       title: string;
       description?: string;
       color?: string;
-      entity_type: 'project' | 'goal' | 'task';
+      entity_type: 'project' | 'task';
     };
 
     if (!title || !entity_type) {

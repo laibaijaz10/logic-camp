@@ -1,19 +1,24 @@
+import { db } from '@/lib/mockData';
+
 interface Notification {
   id: number;
   message: string;
   read: boolean;
 }
 
-const API_URL = "/api/notifications";
-
-export const getNotifications = async (userId: number): Promise<Notification[]> => {
-  const res = await fetch(`${API_URL}?userId=${userId}`);
-  if (!res.ok) throw new Error("Failed to fetch notifications");
-  return res.json();
+export const getNotifications = async (_userId: number): Promise<Notification[]> => {
+  return db.notifications.map(n => ({
+    id: n.id,
+    message: n.message,
+    read: n.isRead,
+  }));
 };
 
 export const markAsRead = async (id: number) => {
-  const res = await fetch(`${API_URL}/${id}/read`, { method: "PUT" });
-  if (!res.ok) throw new Error("Failed to mark as read");
-  return res.json();
+  const index = db.notifications.findIndex(n => n.id === id);
+  if (index !== -1) {
+    db.notifications[index].isRead = true;
+    return { success: true };
+  }
+  throw new Error("Notification not found");
 };

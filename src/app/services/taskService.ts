@@ -1,54 +1,28 @@
+import { db } from '@/lib/mockData';
+import type { Task } from '@/types';
+
 interface TaskAssignee {
   id: number;
   name: string;
   email: string;
 }
 
-interface Task {
-  id: number;
-  title: string;
-  description?: string;
-  status: string;
-  priority?: 'low' | 'medium' | 'high' | 'urgent';
-  dueDate?: string;
-  completed: boolean;
-  goalId: number;
-  assignedTo?: TaskAssignee;
-  assignees?: TaskAssignee[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-const API_URL = "/api/tasks";
+// All task operations below now work purely against the in-memory mock database.
+// No network / API calls are performed.
 
 export const getTasksByProject = async (projectId: number): Promise<Task[]> => {
-  const res = await fetch(`${API_URL}?goalId=${projectId}`);
-  if (!res.ok) throw new Error("Failed to fetch tasks");
-  return res.json();
+  return db.getTasksByProject(projectId) as unknown as Task[];
 };
 
-export const getTasksByGoal = async (goalId: number): Promise<Task[]> => {
-  const res = await fetch(`${API_URL}?goalId=${goalId}`);
-  if (!res.ok) throw new Error("Failed to fetch tasks");
-  return res.json();
-};
 
 export const updateTaskStatus = async (taskId: number, statusTitle: string) => {
-  const res = await fetch(`${API_URL}/${taskId}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ statusTitle }),
-  });
-  if (!res.ok) throw new Error("Failed to update task status");
-  return res.json();
+  const updated = db.updateTask(taskId, { status_title: statusTitle });
+  if (!updated) throw new Error('Failed to update task status');
+  return updated;
 };
 
-export const createTask = async (task: Omit<Task, "id">) => {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(task),
-  });
-  if (!res.ok) throw new Error("Failed to create task");
-  return res.json();
+export const createTask = async (task: Omit<Task, 'id'>) => {
+  const created = db.createTask(task as any);
+  if (!created) throw new Error('Failed to create task');
+  return created;
 };

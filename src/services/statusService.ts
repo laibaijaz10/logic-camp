@@ -1,7 +1,7 @@
 import { StatusItem } from '@/types';
 
-// Default statuses for all entity types (same for projects/goals/tasks)
-export const getDefaultStatuses = (entityType: 'project' | 'goal' | 'task'): StatusItem[] => {
+// Default statuses for all entity types (same for projects/tasks)
+export const getDefaultStatuses = (entityType: 'project' | 'task'): StatusItem[] => {
   const baseStatuses = [
     { id: 1, title: 'todo', description: 'Item is pending', color: '#6B7280', isDeletable: true },
     { id: 2, title: 'inProgress', description: 'Item is in progress', color: '#3B82F6', isDeletable: true },

@@ -11,8 +11,10 @@ interface StatusDropdownProps {
   onStatusesChange: (statuses: StatusItem[]) => void;
   selectedStatus: string;
   onStatusSelect: (status: string) => void;
-  entityType: 'project' | 'goal' | 'task';
+  entityType: 'project' | 'task';
   disabled?: boolean;
+  hideLabel?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export default function StatusDropdown({
@@ -21,7 +23,9 @@ export default function StatusDropdown({
   selectedStatus,
   onStatusSelect,
   entityType,
-  disabled = false
+  disabled = false,
+  hideLabel = false,
+  onOpenChange,
 }: StatusDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -31,10 +35,10 @@ export default function StatusDropdown({
   // Use unified default statuses for all entity types
   const getDefaultStatuses = (): StatusItem[] => {
     return [
-      { id: 1, title: 'todo', description: 'Item is pending', color: '#6B7280', isDeletable: true },
-      { id: 2, title: 'inProgress', description: 'Item is in progress', color: '#3B82F6', isDeletable: true },
-      { id: 3, title: 'testing', description: 'Item is being tested', color: '#F59E0B', isDeletable: false },
-      { id: 4, title: 'done', description: 'Item is completed', color: '#10B981', isDeletable: false }
+      { id: 1, title: 'To Do', description: 'Item is pending', color: '#6B7280', isDeletable: false },
+      { id: 2, title: 'In Progress', description: 'Item is in progress', color: '#3B82F6', isDeletable: false },
+      { id: 3, title: 'Testing', description: 'Item is being tested', color: '#F59E0B', isDeletable: false },
+      { id: 4, title: 'Done', description: 'Item is completed', color: '#10B981', isDeletable: false }
     ];
   };
 
@@ -79,18 +83,23 @@ export default function StatusDropdown({
     setConfirmOpen(false);
   };
 
-  const selectedStatusData = effectiveStatuses.find(s => s.title === selectedStatus);
+  const selectedStatusData = effectiveStatuses.find(s => s.title.toLowerCase() === selectedStatus.toLowerCase());
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-300 capitalize">
-          {entityType} Status
-        </label>
+      <div className="flex items-center justify-between min-h-[20px]">
+        {!hideLabel && (
+          <label className="text-sm font-medium text-slate-300 capitalize">
+            {entityType} Status
+          </label>
+        )}
         <button
           type="button"
-          onClick={() => setShowAddModal(true)}
-          className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAddModal(true);
+          }}
+          className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 uppercase tracking-widest ml-auto"
           disabled={disabled}
         >
           <Plus className="h-3 w-3" />
@@ -102,9 +111,13 @@ export default function StatusDropdown({
       <div className="relative">
         <button
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            const next = !isOpen;
+            setIsOpen(next);
+            onOpenChange?.(next);
+          }}
           disabled={disabled}
-          className="w-full px-4 py-3 rounded-xl bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-5 py-3.5 rounded-2xl bg-slate-950 border border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all duration-200 flex items-center justify-between disabled:opacity-60 disabled:cursor-not-allowed group shadow-inner"
         >
           <div className="flex items-center gap-2">
             {selectedStatusData && (
@@ -121,7 +134,7 @@ export default function StatusDropdown({
         </button>
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700/50 rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-slate-700/50 rounded-xl shadow-2xl z-[9999] max-h-60 overflow-y-auto">
             <div className="p-2">
               <div className="text-xs text-slate-400 px-3 py-2 font-medium">Statuses</div>
               {effectiveStatuses.map((status) => (
@@ -134,6 +147,7 @@ export default function StatusDropdown({
                     onClick={() => {
                       onStatusSelect(status.title);
                       setIsOpen(false);
+                      onOpenChange?.(false);
                     }}
                     className="flex items-center gap-3 flex-1 text-left"
                   >
@@ -170,6 +184,7 @@ export default function StatusDropdown({
                 onClick={() => {
                   setShowAddModal(true);
                   setIsOpen(false);
+                  onOpenChange?.(false);
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-indigo-400 hover:text-indigo-300 hover:bg-slate-700/50 rounded-lg transition-colors"
               >

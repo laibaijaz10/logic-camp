@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { db } from '@/lib/mockData';
 
 export type EditTeamModalProps = {
   isOpen: boolean;
@@ -31,30 +32,20 @@ export default function EditTeamModal({ isOpen, onClose, team, allUsers, onSaved
     if (!team) return;
     try {
       setSaving(true);
-      // update name if changed
-      if (name.trim() !== team.name.trim()) {
-        const res = await fetch(`/api/teams/${team.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ name: name.trim() }),
-        });
-        if (!res.ok) {
-          const e = await res.json().catch(() => ({}));
-          throw new Error(e?.error || 'Failed to update team name');
-        }
-      }
-      // replace members
-      const membersRes = await fetch(`/api/teams/${team.id}/members`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ userIds: selectedUserIds }),
-      });
-      if (!membersRes.ok) {
-        const e = await membersRes.json().catch(() => ({}));
-        throw new Error(e?.error || 'Failed to update team members');
-      }
+      const trimmedName = name.trim();
+
+      // Update the team inside the mock database
+      db.teams = db.teams.map((t: any) =>
+        t.id === team.id
+          ? {
+              ...t,
+              name: trimmedName,
+              members: selectedUserIds,
+            }
+          : t
+      );
+
+      // Let parent hook refetch / refresh teams list
       onSaved && onSaved();
       onClose();
     } catch (err: any) {

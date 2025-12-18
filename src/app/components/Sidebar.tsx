@@ -15,7 +15,6 @@ const links: SidebarLink[] = [
   { label: "My Tasks", href: "/?tab=my-tasks" },
   { label: "Projects", href: "/?tab=projects" },
   { label: "Teams", href: "/?tab=teams" },
-  { label: "Messages", href: "/messages" },
 ];
 
 const Sidebar: React.FC = () => {
@@ -41,11 +40,10 @@ const Sidebar: React.FC = () => {
             <Link
               key={`${link.label}-${link.href}`}
               href={link.href}
-              className={`px-3 py-2 rounded-md transition-colors ${
-                isActive
+              className={`px-3 py-2 rounded-md transition-colors ${isActive
                   ? "bg-indigo-600 text-white"
                   : "text-gray-300 hover:bg-gray-800 hover:text-white"
-              }`}
+                }`}
             >
               {link.label}
             </Link>

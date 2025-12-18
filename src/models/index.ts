@@ -4,35 +4,29 @@ import { sequelize } from "../lib/database";
 // Import spec-compliant model classes
 import User from "./User";
 import Project from "./Project";
-import Goal from "./Goal";
 import Task from "./Task";
 import Team from "./Team";
 import TeamMember from "./TeamMember";
 import TaskComment from "./TaskComment";
-import Message from "./Message";
 
 // Type definitions for model associations
 export interface ModelsInterface {
   User: typeof User;
   Project: typeof Project;
-  Goal: typeof Goal;
   Task: typeof Task;
   Team: typeof Team;
   TaskComment: typeof TaskComment;
   TeamMember: typeof TeamMember;
-  Message: typeof Message;
   sequelize: Sequelize;
 }
 
 // Import initialization functions
 import { initUser } from "./User";
 import { initProject } from "./Project";
-import { initGoal } from "./Goal";
 import { initTask } from "./Task";
 import { initTeam } from "./Team";
 import { initTeamMember } from "./TeamMember";
 import { initTaskComment } from "./TaskComment";
-import { initMessage } from "./Message";
 
 /**
  * Initialize all models.
@@ -45,12 +39,10 @@ export const initializeModels = (sequelizeInstance: Sequelize = sequelize): void
   // Initialize all models with sequelize instance
   initUser(sequelizeInstance);
   initProject(sequelizeInstance);
-  initGoal(sequelizeInstance);
   initTask(sequelizeInstance);
   initTeam(sequelizeInstance);
   initTaskComment(sequelizeInstance);
   initTeamMember(sequelizeInstance);
-  initMessage(sequelizeInstance);
 
   console.log("Models initialized successfully");
 };
@@ -69,15 +61,9 @@ export const setupAssociations = () => {
   // Project associations
   Project.belongsTo(User, { foreignKey: "owner_id", as: "owner" });
   Project.belongsTo(Team, { foreignKey: "team_id", as: "team" });
-  Project.hasMany(Goal, { foreignKey: "project_id", as: "goals" });
-
-  // Goal associations
-  Goal.belongsTo(Project, { foreignKey: "project_id", as: "project" });
-  Goal.hasMany(Task, { foreignKey: "goal_id", as: "tasks" });
 
   // Task associations
   Task.belongsTo(User, { foreignKey: "assigned_to_id", as: "assignedTo" });
-  Task.belongsTo(Goal, { foreignKey: "goal_id", as: "goal" });
   Task.hasMany(TaskComment, { foreignKey: "task_id", as: "comments" });
 
   // Team associations
@@ -87,13 +73,15 @@ export const setupAssociations = () => {
   Team.belongsToMany(User, { through: TeamMember, foreignKey: "team_id", otherKey: "user_id", as: "members" });
   User.belongsToMany(Team, { through: TeamMember, foreignKey: "user_id", otherKey: "team_id", as: "teams" });
 
+  // Explicit associations for join table
+  TeamMember.belongsTo(User, { foreignKey: "user_id", as: "user" });
+  TeamMember.belongsTo(Team, { foreignKey: "team_id", as: "team" });
+  User.hasMany(TeamMember, { foreignKey: "user_id" });
+  Team.hasMany(TeamMember, { foreignKey: "team_id" });
+
   // TaskComment associations
   TaskComment.belongsTo(Task, { foreignKey: "task_id", as: "task" });
   TaskComment.belongsTo(User, { foreignKey: "user_id", as: "user" });
-
-  // Message associations
-  Message.belongsTo(User, { foreignKey: "senderId", as: "sender" });
-  Message.belongsTo(User, { foreignKey: "receiverId", as: "receiver" });
 
   console.log("Model associations set up successfully");
 };
@@ -102,12 +90,10 @@ export const setupAssociations = () => {
 export {
   User,
   Project,
-  Goal,
   Task,
   Team,
   TaskComment,
   TeamMember,
-  Message,
   sequelize,
 };
 
@@ -117,12 +103,10 @@ export {
 export default {
   User,
   Project,
-  Goal,
   Task,
   Team,
   TaskComment,
   TeamMember,
-  Message,
   sequelize,
   initializeModels,
   setupAssociations,

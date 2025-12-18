@@ -1,51 +1,20 @@
-import { notFound } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { getProjectById } from '@/app/services/projectService';
+import { getTasksByProject } from '@/services/taskService';
 import AdminProjectDetails from '../components/AdminProjectDetails';
 import ProjectDetailsLoader from '../components/ProjectDetailsLoader';
 import AdminProjectLayout from '../components/AdminProjectLayout';
 
 export default async function AdminProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-
-  // Build absolute base URL for server-side fetch
-  const baseUrl = (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${process.env.PORT || 3000}`)
-  ).replace(/\/$/, '');
-
-  const cookieStore = await cookies();
-  const authToken = cookieStore.get('authToken')?.value;
+  const projectId = Number(resolvedParams.id);
 
   try {
-    const [projectRes, goalsRes] = await Promise.all([
-      fetch(`${baseUrl}/api/projects/${resolvedParams.id}`, {
-        headers: authToken ? { Cookie: `authToken=${authToken}` } : undefined,
-        cache: 'no-store'
-      }),
-      fetch(`${baseUrl}/api/goals?projectId=${resolvedParams.id}`, {
-        headers: authToken ? { Cookie: `authToken=${authToken}` } : undefined,
-        cache: 'no-store'
-      })
-    ]);
-
-    if (!projectRes.ok) {
-      if (projectRes.status === 404) notFound();
-      // Fallback to client loader if unauthorized or other server-side fetch failures
-      return <ProjectDetailsLoader projectId={Number(resolvedParams.id)} />;
-    }
-
-    const [projectData, goalsData] = await Promise.all([projectRes.json(), goalsRes.ok ? goalsRes.json() : Promise.resolve({ goals: [] })]);
-    const project = projectData.project;
-    const initialGoals = Array.isArray(goalsData) ? goalsData : (goalsData?.goals || []);
-
-    if (!project) {
-      notFound();
-    }
+    const project = await getProjectById(projectId);
+    const { tasks: initialTasks } = await getTasksByProject(projectId);
 
     const statusTitle = (project as any)?.status_title || (project as any)?.status || 'todo';
     const teamMembersCount = Array.isArray((project as any)?.members) ? (project as any).members.length : 0;
-    const goalsCount = Array.isArray(initialGoals) ? initialGoals.length : 0;
+    const tasksCount = Array.isArray(initialTasks) ? initialTasks.length : 0;
 
     return (
       <AdminProjectLayout>
@@ -98,8 +67,8 @@ export default async function AdminProjectPage({ params }: { params: Promise<{ i
                 <div className="text-white mt-1">{teamMembersCount}</div>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-xs uppercase tracking-wider text-gray-400">Goals</div>
-                <div className="text-white mt-1">{goalsCount}</div>
+                <div className="text-xs uppercase tracking-wider text-gray-400">Tasks</div>
+                <div className="text-white mt-1">{tasksCount}</div>
               </div>
             </div>
           </div>
@@ -108,7 +77,7 @@ export default async function AdminProjectPage({ params }: { params: Promise<{ i
         {/* Main content */}
         <div className="mx-auto max-w-7xl px-0 py-8">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-            <AdminProjectDetails project={project} initialGoals={initialGoals} />
+            <AdminProjectDetails project={project} initialTasks={initialTasks} />
           </div>
         </div>
       </AdminProjectLayout>

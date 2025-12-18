@@ -41,9 +41,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name, email, role, isApproved, isActive } = body;
+  const { name, email, role, password, isApproved, isActive } = body;
 
-  if (!name && !email && !role && isApproved === undefined) {
+  if (!name && !email && !role && !password && isApproved === undefined) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
@@ -55,6 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     if (name) user.name = name;
     if (email) user.email = email;
+    if (password) user.password = password;
     if (role !== undefined) {
       const normalizedRole = role === 'teamLead' ? 'team_lead' : role;
       const allowed = ['admin', 'team_lead', 'employee'];

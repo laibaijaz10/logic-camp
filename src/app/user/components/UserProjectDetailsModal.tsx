@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 
 import { formatDate } from "../../../utils/helpers";
-import ProjectChat from './ProjectChat'; // Add this import
+
 
 interface UserProjectDetailsModalProps {
   project: any;
@@ -39,7 +39,7 @@ export default function UserProjectDetailsModal({ project, isOpen, onClose }: Us
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xl p-4 animate-fadeIn" onClick={onClose}>
-      <div 
+      <div
         className="bg-gray-900/90 border border-white/20 backdrop-blur-xl rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_12px_40px_rgba(0,0,0,0.35)] relative animate-scaleIn text-gray-100 p-6 space-y-8"
         onClick={(e) => e.stopPropagation()}
       >
@@ -114,11 +114,7 @@ export default function UserProjectDetailsModal({ project, isOpen, onClose }: Us
             )}
           </div>
 
-          {/* Project Chat */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-400">💬 Project Chat</label>
-            <ProjectChat projectId={project.id} />
-          </div>
+
         </div>
       </div>
     </div>

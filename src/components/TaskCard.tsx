@@ -41,10 +41,11 @@ const getStatusColor = (status: string) => {
 interface TaskCardProps {
   task: Task;
   onEditTask?: () => void;
-  onDeleteTask?: () => void;
+  onDeleteTask?: (taskId: number) => void;
+  onUpdateStatus?: (task: Task) => Promise<void>;
 }
 
-export default function TaskCard({ task, onEditTask, onDeleteTask }: TaskCardProps) {
+export default function TaskCard({ task, onEditTask, onDeleteTask, onUpdateStatus }: TaskCardProps) {
   const displayAssignees = task.assignees || (task.assignedTo ? [task.assignedTo] : []);
   
   return (
@@ -99,6 +100,14 @@ export default function TaskCard({ task, onEditTask, onDeleteTask }: TaskCardPro
       )}
       
       <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end gap-2">
+        {onUpdateStatus && (
+          <button 
+            onClick={() => onUpdateStatus(task)}
+            className="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
+          >
+            Toggle Status
+          </button>
+        )}
         {onEditTask && (
           <button 
             onClick={onEditTask}
@@ -109,7 +118,7 @@ export default function TaskCard({ task, onEditTask, onDeleteTask }: TaskCardPro
         )}
         {onDeleteTask && (
           <button 
-            onClick={onDeleteTask}
+            onClick={() => onDeleteTask(task.id)}
             className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100 transition-colors"
           >
             Delete

@@ -1,7 +1,8 @@
 "use client";
 
-import { LogOut, Plus, Globe, Bell } from "lucide-react";
+import { LogOut, Plus, Bell } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { ReactNode } from "react";
 
 interface HeaderProps {
@@ -26,10 +27,15 @@ export default function Header({ children }: HeaderProps) {
       <div className="px-4 md:px-6 py-3 flex items-center justify-between">
         {/* Left: Logo lockup */}
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-[0_0_24px_rgba(99,102,241,0.55)]" />
+          <Image
+            src="/logo.png"
+            alt="Logic Camp logo"
+            width={148}
+            height={148}
+            className="rounded-lg object-contain"
+            priority
+          />
           <div className="text-sm md:text-base font-bold tracking-wide">
-            <span className="text-indigo-400">Logic</span>
-            <span className="text-purple-400">Camp</span>
           </div>
         </div>
 
@@ -49,13 +55,7 @@ export default function Header({ children }: HeaderProps) {
             Notifications
           </button>
 
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-3.5 py-2 text-sm shadow-md hover:shadow-lg hover:scale-[1.02] transition-all"
-          >
-            <Globe className="h-4 w-4" />
-            View Site
-          </Link>
+
 
           {/* Fixed Logout button */}
           <button

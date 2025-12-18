@@ -1,7 +1,9 @@
-'use client';
-import React from 'react';
+"use client";
+import React, { useState } from 'react';
 import { Users, UsersRound, FolderOpen, CheckSquare, TrendingUp, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { User, Team, Project, Task } from '../hooks/useAdminData';
+import StatusPills from '@/components/StatusPills';
+import { updateProjectStatus } from '@/services/projectService';
 
 interface DashboardOverviewProps {
   users: User[];
@@ -12,6 +14,8 @@ interface DashboardOverviewProps {
   loadingTeams: boolean;
   loadingProjects: boolean;
   loadingTasks: boolean;
+  totalTeams: number;
+  totalProjects: number;
 }
 
 export default function DashboardOverview({
@@ -22,19 +26,33 @@ export default function DashboardOverview({
   loadingUsers,
   loadingTeams,
   loadingProjects,
-  loadingTasks
+  loadingTasks,
+  totalTeams,
+  totalProjects,
 }: DashboardOverviewProps) {
   // Calculate stats
   const totalUsers = users.length;
   const approvedUsers = users.filter(user => user.isApproved).length;
   const pendingUsers = users.filter(user => !user.isApproved).length;
   
-  const totalTeams = teams.length;
-  const teamsWithMembers = teams.filter(team => team.members && team.members.length > 0).length;
+  const [statusOverrides, setStatusOverrides] = useState<Record<number, string>>({});
+
+  const totalTeamsProp = totalTeams || teams.length;
+  // If members are not loaded on teams yet, fall back to treating all teams as having members
+  const teamsWithMembers = teams.some(team => Array.isArray((team as any).members) && (team as any).members.length > 0)
+    ? teams.filter(team => Array.isArray((team as any).members) && (team as any).members.length > 0).length
+    : totalTeamsProp;
   
-  const totalProjects = projects.length;
-  const activeProjects = projects.filter(project => project.status_title === 'active').length;
-  const completedProjects = projects.filter(project => project.status_title === 'completed').length;
+  const totalProjectsProp = totalProjects || projects.length;
+  // Map mock status_title values (e.g. "In Progress", "To Do", "Testing", "Done") into active/completed
+  const activeProjects = projects.filter(project => {
+    const status = String((project as any).status_title || '').toLowerCase();
+    return status === 'in progress' || status === 'to do' || status === 'testing' || status === 'doing';
+  }).length;
+  const completedProjects = projects.filter(project => {
+    const status = String((project as any).status_title || '').toLowerCase();
+    return status === 'done' || status === 'completed';
+  }).length;
   
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.completed).length;
@@ -57,7 +75,7 @@ export default function DashboardOverview({
     },
     {
       title: 'Teams',
-      value: totalTeams,
+      value: totalTeamsProp,
       subtitle: `${teamsWithMembers} with members`,
       icon: UsersRound,
       gradient: 'from-green-600 to-green-500',
@@ -67,7 +85,7 @@ export default function DashboardOverview({
     },
     {
       title: 'Projects',
-      value: totalProjects,
+      value: totalProjectsProp,
       subtitle: `${activeProjects} active, ${completedProjects} completed`,
       icon: FolderOpen,
       gradient: 'from-purple-600 to-purple-500',
@@ -76,6 +94,27 @@ export default function DashboardOverview({
       loading: loadingProjects
     }
   ];
+
+  // Sort projects by last updated/created date and take the latest ones
+  const latestProjects = [...projects]
+    .map((project) => {
+      const anyProject: any = project as any;
+      const updatedAt = anyProject.updatedAt ? new Date(anyProject.updatedAt) : undefined;
+      const createdAt = anyProject.createdAt ? new Date(anyProject.createdAt) : undefined;
+      const lastUpdated = updatedAt || createdAt || new Date();
+
+      const teamMembers = (anyProject.team && Array.isArray(anyProject.team.members))
+        ? anyProject.team.members
+        : [];
+
+      return {
+        ...anyProject,
+        _lastUpdated: lastUpdated,
+        _teamSize: teamMembers.length,
+      };
+    })
+    .sort((a, b) => (b._lastUpdated as Date).getTime() - (a._lastUpdated as Date).getTime())
+    .slice(0, 5);
 
   const quickMetrics = [
     {
@@ -178,20 +217,77 @@ export default function DashboardOverview({
         })}
       </div>
 
-      {/* Recent Activity Section */}
-      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-xl">
-        <h2 className="text-lg font-semibold text-white mb-3">Recent Activity</h2>
-        <div className="space-y-3">
-          {/* Activity items would go here - for now showing placeholder */}
-          <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-            <div className="flex-1">
-              <div className="text-sm text-white">System initialized successfully</div>
-              <div className="text-xs text-slate-400">Dashboard is ready for use</div>
-            </div>
-            <div className="text-xs text-slate-500">{new Date().toLocaleTimeString()}</div>
-          </div>
+      {/* Latest Projects Table */}
+      <div className="bg-gradient-to-br from-slate-900/80 via-slate-900/60 to-slate-800/80 border border-slate-700/70 rounded-2xl p-6 backdrop-blur-2xl shadow-[0_18px_60px_rgba(0,0,0,0.55)] mt-4">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-semibold text-white tracking-wide">Latest Projects</h2>
+          <p className="text-xs md:text-sm text-slate-400">Showing most recently updated projects</p>
         </div>
+
+        {loadingProjects ? (
+          <div className="flex items-center justify-center py-10 text-slate-300 text-base">
+            Loading projects...
+          </div>
+        ) : latestProjects.length === 0 ? (
+          <div className="py-6 text-base text-slate-300">No projects found yet.</div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-700/60 bg-slate-900/40">
+            <table className="min-w-full text-sm md:text-[0.95rem]">
+              <thead>
+                <tr className="text-left text-slate-300 bg-slate-900/70 border-b border-slate-700/80">
+                  <th className="py-3 pl-4 pr-4 font-semibold tracking-wide text-xs md:text-sm">Project ID</th>
+                  <th className="py-3 pr-4 font-semibold tracking-wide text-xs md:text-sm">Project Name</th>
+                  <th className="py-3 pr-4 font-semibold tracking-wide text-xs md:text-sm">Description</th>
+                  <th className="py-3 pr-4 font-semibold tracking-wide text-xs md:text-sm">Status</th>
+                  <th className="py-3 pr-4 font-semibold tracking-wide text-xs md:text-sm">Team Size</th>
+                  <th className="py-3 pr-4 font-semibold tracking-wide text-xs md:text-sm">Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {latestProjects.map((project) => {
+                  const displayStatus = statusOverrides[project.id] ?? (project as any).status_title ?? 'To Do';
+                  return (
+                    <tr
+                      key={project.id}
+                      className="border-b border-slate-800/70 last:border-0 hover:bg-slate-800/70 transition-colors"
+                    >
+                      <td className="py-3 pl-4 pr-4 text-slate-300 align-middle">{project.id}</td>
+                      <td className="py-3 pr-4 font-semibold text-slate-50 align-middle">{project.name}</td>
+                      <td className="py-3 pr-4 text-slate-300 max-w-xs truncate align-middle">
+                        {project.description}
+                      </td>
+                      <td className="py-2 pr-4 align-middle">
+                        <StatusPills
+                          currentStatus={displayStatus}
+                          ariaLabel={`Project ${project.name} status`}
+                          onStatusChange={async (nextStatus) => {
+                            setStatusOverrides((prev) => ({ ...prev, [project.id]: nextStatus }));
+                            try {
+                              await updateProjectStatus(project.id, nextStatus);
+                            } catch (e) {
+                              console.error('Failed to update project status', e);
+                              setStatusOverrides((prev) => {
+                                const updated = { ...prev };
+                                delete updated[project.id];
+                                return updated;
+                              });
+                            }
+                          }}
+                        />
+                      </td>
+                      <td className="py-3 pr-4 text-slate-200 font-medium align-middle">{(project as any)._teamSize ?? (project.team?.members?.length ?? 0)}</td>
+                      <td className="py-3 pr-4 text-slate-300 align-middle whitespace-nowrap">
+                        {project.updatedAt
+                          ? new Date(project.updatedAt).toLocaleDateString()
+                          : ''}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -64,7 +64,7 @@ export default function DeleteProjectModal({
           </p>
           <div className="bg-red-600/10 border border-red-500/20 rounded-xl p-4">
             <p className="text-red-300 text-sm">
-              <strong>Warning:</strong> This action cannot be undone. All tasks, messages, and data associated with this project will be permanently deleted.
+              <strong>Warning:</strong> This action cannot be undone. All tasks and data associated with this project will be permanently deleted.
             </p>
           </div>
         </div>

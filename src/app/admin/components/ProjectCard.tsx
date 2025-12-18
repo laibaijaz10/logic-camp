@@ -1,20 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { 
-  Users, 
-  Calendar, 
-  FolderKanban, 
-  Edit, 
-  Trash2, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  Star, 
-  Zap 
+import {
+  Users,
+  Calendar,
+  FolderKanban,
+  Edit,
+  Trash2,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Star,
+  Zap
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Project } from "../hooks/useAdminData";
+import StatusPills from "@/components/StatusPills";
+import { updateProjectStatus } from "@/services/projectService";
 
 // Types
 interface ProjectCardProps {
@@ -71,11 +73,11 @@ const STATUS_CONFIG = {
 const getRemainingDays = (project: Project): number | null => {
   const endDate = (project as any).endDate || (project as any).end_date;
   if (!endDate) return null;
-  
+
   const today = new Date();
   const deadline = new Date(endDate);
   if (Number.isNaN(deadline.getTime())) return null;
-  
+
   const diffTime = deadline.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
@@ -87,7 +89,7 @@ const getStatusTheme = (status: string): StatusTheme => {
 // Normalize incoming status values to a consistent config key and label
 const normalizeStatus = (statusTitle?: string, statuses?: Array<{ id: number; title: string; description?: string; color: string }> | null): { key: keyof typeof STATUS_CONFIG; label: string } => {
   if (!statusTitle) return { key: 'default', label: 'todo' };
-  
+
   const raw = statusTitle.trim().toLowerCase();
   if (['done', 'completed', 'complete', 'finished'].includes(raw)) return { key: 'completed', label: 'done' };
   if (['doing', 'in-progress', 'in progress', 'progress', 'inprogress'].includes(raw)) return { key: 'in-progress', label: 'doing' };
@@ -112,30 +114,21 @@ const formatDeadlineText = (remainingDays: number | null): string => {
 };
 
 // Sub-components
-const BackgroundEffects: React.FC<{ isHovered: boolean; statusTheme: StatusTheme }> = ({ 
-  isHovered, 
-  statusTheme 
-}) => (
-  <div className={`absolute inset-0 transition-opacity duration-500 ${isHovered ? 'opacity-30' : 'opacity-0'}`}>
-    <div className={`absolute inset-0 bg-gradient-to-br ${statusTheme.bg}`}></div>
-    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-conic from-indigo-500/20 via-purple-500/10 to-cyan-500/20 rounded-full blur-3xl"></div>
-  </div>
-);
 
-const StatusBadge: React.FC<{ 
-  statusKey: keyof typeof STATUS_CONFIG; 
-  statusLabel: string; 
-  statusTheme: StatusTheme; 
-  isHovered: boolean; 
+
+const StatusBadge: React.FC<{
+  statusKey: keyof typeof STATUS_CONFIG;
+  statusLabel: string;
+  statusTheme: StatusTheme;
+  isHovered: boolean;
 }> = ({ statusKey, statusLabel, statusTheme, isHovered }) => {
   if (!statusKey) return null;
-  
+
   return (
     <div className="absolute top-2 right-2 z-20">
       <div className={`flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-xl backdrop-blur-lg
         bg-gradient-to-r ${statusTheme.bg} border ${statusTheme.border}
-        shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300
-        ${isHovered ? `${statusTheme.glow} shadow-2xl` : ''}`}>
+        shadow-lg`}>
         <span className={statusTheme.text}>
           {getStatusIcon(statusKey)}
         </span>
@@ -147,41 +140,34 @@ const StatusBadge: React.FC<{
   );
 };
 
-const ProjectHeader: React.FC<{ 
-  project: Project; 
-  isHovered: boolean; 
+const ProjectHeader: React.FC<{
+  project: Project;
+  isHovered: boolean;
 }> = ({ project, isHovered }) => (
   <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
     {/* Project Icon */}
     <div className={`shrink-0 h-8 w-8 sm:h-10 sm:w-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-indigo-500 via-purple-600 to-cyan-500 
-      grid place-items-center shadow-xl transition-all duration-500 relative overflow-hidden
-      ${isHovered ? 'shadow-indigo-500/40 rotate-12 scale-110' : 'shadow-indigo-500/20'}`}>
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      grid place-items-center shadow-indigo-500/20 shadow-xl relative overflow-hidden`}>
       <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5 text-white relative z-10" />
     </div>
 
     {/* Title and Description */}
     <div className="min-w-0 flex-1 overflow-hidden">
-      <h3 className={`font-bold text-sm sm:text-lg leading-tight line-clamp-2 transition-all duration-300 truncate
-        ${isHovered 
-          ? 'bg-gradient-to-r from-white via-indigo-200 to-cyan-200 bg-clip-text text-transparent' 
-          : 'text-white'
-        }`}>
+      <h3 className="font-bold text-sm sm:text-lg leading-tight line-clamp-2 text-white truncate">
         {project.name}
       </h3>
-      <p className={`mt-1 sm:mt-2 text-xs sm:text-sm line-clamp-2 transition-colors duration-300 break-words
-        ${isHovered ? 'text-gray-300' : 'text-gray-400'}`}>
+      <p className="mt-1 sm:mt-2 text-xs sm:text-sm line-clamp-2 text-gray-400 break-words">
         {project.description}
       </p>
     </div>
   </div>
 );
 
-const StatsGrid: React.FC<{ 
-  project: Project; 
-  owner: Owner | null; 
-  remainingDays: number | null; 
-  isHovered: boolean; 
+const StatsGrid: React.FC<{
+  project: Project;
+  owner: Owner | null;
+  remainingDays: number | null;
+  isHovered: boolean;
 }> = ({ project, owner, remainingDays, isHovered }) => (
   <div className="mb-3 sm:mb-4">
     {/* Team and Deadline Row */}
@@ -293,8 +279,8 @@ const ProjectFooter: React.FC<{
 
       {/* Updated Date */}
       <div className={`flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border transition-all duration-300 flex-1
-        ${isHovered 
-          ? 'bg-cyan-500/20 border-cyan-400/40 shadow-lg shadow-cyan-500/20' 
+        ${isHovered
+          ? 'bg-cyan-500/20 border-cyan-400/40 shadow-lg shadow-cyan-500/20'
           : 'bg-cyan-500/10 border-cyan-500/20'
         }`}>
         <div className="p-0.5 sm:p-1 bg-cyan-500/20 rounded-md sm:rounded-lg">
@@ -342,13 +328,13 @@ const ActionButton: React.FC<{
 }> = ({ icon: Icon, label, onClick, variant, isHovered }) => {
   const variantClasses = {
     indigo: {
-      bg: isHovered 
-        ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-300 shadow-lg shadow-indigo-500/20' 
+      bg: isHovered
+        ? 'bg-indigo-500/20 border-indigo-400/40 text-indigo-300 shadow-lg shadow-indigo-500/20'
         : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 hover:border-indigo-400/40'
     },
     red: {
-      bg: isHovered 
-        ? 'bg-red-500/20 border-red-400/40 text-red-300 shadow-lg shadow-red-500/20' 
+      bg: isHovered
+        ? 'bg-red-500/20 border-red-400/40 text-red-300 shadow-lg shadow-red-500/20'
         : 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:border-red-400/40'
     }
   };
@@ -356,8 +342,8 @@ const ActionButton: React.FC<{
   return (
     <button
       onClick={onClick}
-      className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border font-semibold text-xs transition-all duration-300
-        flex items-center justify-center gap-1 hover:scale-105 hover:-translate-y-1 relative z-20
+      className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border font-semibold text-xs transition-colors duration-300
+        flex items-center justify-center gap-1 relative z-20
         ${variantClasses[variant].bg}`}
     >
       <Icon className="h-3 w-3" />
@@ -366,29 +352,24 @@ const ActionButton: React.FC<{
   );
 };
 
-const BorderGlowEffect: React.FC<{ isHovered: boolean }> = ({ isHovered }) => (
-  <div className={`absolute inset-0 rounded-3xl transition-opacity duration-500 pointer-events-none
-    ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-    <div className="absolute inset-0 rounded-3xl border border-white/20"></div>
-    <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-indigo-500/10 via-transparent to-purple-500/10"></div>
-  </div>
-);
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ 
-  project, 
-  index, 
-  onOpenProject, 
-  onEditProject 
+
+const ProjectCard: React.FC<ProjectCardProps> = ({
+  project,
+  index,
+  onOpenProject,
+  onEditProject
 }) => {
   const router = useRouter();
   const [owner, setOwner] = useState<Owner | null>(null);
   const [isHovered, setIsHovered] = useState(false);
-  
+  const [statusTitle, setStatusTitle] = useState<string>((project as any).status_title || "To Do");
+
   // Calculate values
   const remainingDays = getRemainingDays(project);
-  const normalized = normalizeStatus((project as any).status_title, (project as any).statuses);
+  const normalized = normalizeStatus(statusTitle, (project as any).statuses);
   const statusTheme = getStatusTheme(normalized.key);
-  
+
   // Set owner from project relation
   useEffect(() => {
     const relOwner = (project as any).owner;
@@ -397,6 +378,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     } else {
       setOwner(null);
     }
+  }, [project]);
+
+  // Keep local status in sync if project changes externally
+  useEffect(() => {
+    setStatusTitle((project as any).status_title || "To Do");
   }, [project]);
 
   // Event handlers
@@ -416,61 +402,68 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   return (
     <div
-      className="group animate-fadeInUp transform transition-all duration-700 hover:scale-[1.02] w-full mx-auto"
+      className="group transform w-full mx-auto h-full"
       style={{ animationDelay: `${0.1 * index}s` }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div 
+      <div
         onClick={handleCardClick}
         tabIndex={0}
         role="button"
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardClick(); } }}
-        className={`relative text-left w-full rounded-2xl border backdrop-blur-xl p-3 sm:p-4 
-        cursor-pointer overflow-hidden transition-all duration-500 ease-out
-        ${isHovered 
-          ? `border-white/30 bg-gradient-to-br from-slate-800/90 via-slate-900/70 to-black/50 shadow-2xl ${statusTheme.glow}` 
-          : 'border-white/10 bg-gradient-to-br from-slate-900/60 via-slate-800/30 to-slate-900/40 shadow-xl'
-        }`}
+        className="relative h-full flex flex-col text-left w-full rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/60 via-slate-800/30 to-slate-900/40 shadow-xl cursor-pointer overflow-hidden"
       >
-        {/* Background Effects */}
-        <BackgroundEffects isHovered={isHovered} statusTheme={statusTheme} />
-        
         {/* Status Badge */}
-        <StatusBadge 
+        <StatusBadge
           statusKey={normalized.key}
           statusLabel={normalized.label}
-          statusTheme={statusTheme} 
-          isHovered={isHovered} 
+          statusTheme={statusTheme}
+          isHovered={isHovered}
         />
 
+        {/* Inline status pills control */}
+        <div className="absolute top-11 right-2 z-20 max-w-[70%]">
+          <StatusPills
+            currentStatus={statusTitle}
+            ariaLabel={`Project ${project.name} status`}
+            onStatusChange={async (nextStatus) => {
+              setStatusTitle(nextStatus);
+              try {
+                await updateProjectStatus(project.id, nextStatus);
+              } catch (error) {
+                console.error("Failed to update project status", error);
+              }
+            }}
+          />
+        </div>
+
         {/* Main Content */}
-        <div className="relative z-10">
-          <ProjectHeader 
-            project={project} 
-            isHovered={isHovered} 
+        <div className="relative z-10 p-3 sm:p-4 flex-1 flex flex-col">
+          <ProjectHeader
+            project={project}
+            isHovered={isHovered}
           />
-          
-          <StatsGrid 
-            project={project} 
+
+          <div className="flex-1">
+            <StatsGrid
+              project={project}
+              owner={owner}
+              remainingDays={remainingDays}
+              isHovered={isHovered}
+            />
+          </div>
+
+          <ProjectFooter
+            project={project}
             owner={owner}
-            remainingDays={remainingDays} 
-            isHovered={isHovered} 
-          />
-          
-          <ProjectFooter 
-            project={project} 
-            owner={owner}
-            isHovered={isHovered} 
+            isHovered={isHovered}
             onEditClick={handleEditClick}
             onDeleteClick={handleDeleteClick}
             onEditProject={onEditProject}
             onOpenProject={onOpenProject}
           />
         </div>
-
-        {/* Border Glow Effect */}
-        <BorderGlowEffect isHovered={isHovered} />
       </div>
     </div>
   );

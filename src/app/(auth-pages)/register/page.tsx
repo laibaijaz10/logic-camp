@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Image from "next/image";
 
 const RegisterPage: React.FC = () => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -70,7 +71,15 @@ const RegisterPage: React.FC = () => {
         <div className="pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-tr from-indigo-600/20 via-purple-600/20 to-fuchsia-600/20 blur-2xl" />
 
         <div className="relative rounded-2xl border border-gray-800/60 bg-gray-900/60 backdrop-blur-xl shadow-xl p-8 animate-fadeIn">
-          <div className="mb-6 animate-slideDown">
+          <div className="flex flex-col items-center mb-6 animate-slideDown">
+            <Image
+              src="/logo.png"
+              alt="Logic Camp logo"
+              width={72}
+              height={72}
+              className="mb-3 rounded-xl object-contain"
+              priority
+            />
             <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs text-indigo-300">
               <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
               Create account

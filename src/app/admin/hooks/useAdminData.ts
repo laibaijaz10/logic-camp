@@ -22,7 +22,7 @@ export interface Team {
 export interface Project {
   id: number;
   name: string;
-  description: string;
+  description?: string;
   progress?: number;
   updatedAt: string;
   statuses?: Array<{ id: number; title: string; description?: string; color: string }>;
@@ -60,6 +60,8 @@ export interface Task {
   updatedAt?: string;
 }
 
+import { db } from "@/lib/mockData";
+
 // -----------------
 // Hook
 // -----------------
@@ -67,11 +69,10 @@ export default function useAdminData(isAuthenticated: boolean = false) {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
-  const [projectsAll, setProjectsAll] = useState<Project[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [projectsPage, setProjectsPage] = useState(1);
-  const [projectsPerPage] = useState(2);
+  const [projectsPerPage] = useState(6);
   const [projectsSearch, setProjectsSearch] = useState("");
   const [totalProjects, setTotalProjects] = useState(0);
   const [totalProjectsPages, setTotalProjectsPages] = useState(0);
@@ -79,498 +80,170 @@ export default function useAdminData(isAuthenticated: boolean = false) {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
   const [teamsPage, setTeamsPage] = useState(1);
-  const [teamsPerPage] = useState(6); // 6 teams per page for nice grid layout
+  const [teamsPerPage] = useState(9);
   const [totalTeams, setTotalTeams] = useState(0);
   const [totalTeamsPages, setTotalTeamsPages] = useState(0);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
 
-  // Determine effective authentication: prefer explicit prop, otherwise infer from localStorage
-  const [effectiveAuthenticated, setEffectiveAuthenticated] = useState<boolean>(isAuthenticated);
+  const [effectiveAuthenticated, setEffectiveAuthenticated] = useState<boolean>(true);
 
+  // Load Users
   useEffect(() => {
-    // If caller didn't assert authentication, infer from presence of adminToken
-    if (!isAuthenticated) {
-      try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-        setEffectiveAuthenticated(!!token);
-      } catch {
-        setEffectiveAuthenticated(false);
-      }
-    } else {
-      setEffectiveAuthenticated(true);
-    }
-  }, [isAuthenticated]);
-
-  // -----------------
-  // Auth Headers
-  // -----------------
-  const getAuthHeaders = useCallback((): Record<string, string> => {
-    const adminToken = localStorage.getItem('adminToken');
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json"
-    };
-    
-    if (adminToken) {
-      headers.Authorization = `Bearer ${adminToken}`;
-    }
-    
-    return headers;
+    setLoadingUsers(true);
+    const mockUsers = db.getUsers().map(u => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role as any,
+      isApproved: true
+    }));
+    setUsers(mockUsers);
+    setLoadingUsers(false);
   }, []);
 
-  // -----------------
-  // Fetch Users
-  // -----------------
-  useEffect(() => {
-    if (!effectiveAuthenticated) {
-      setLoadingUsers(false);
-      return;
-    }
-
-    async function fetchUsers() {
-      try {
-        const headers = getAuthHeaders();
-        const res = await fetch("/api/admin/users", { headers, credentials: 'include' });
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        const data = await res.json();
-        setUsers(Array.isArray(data) ? data : data.users || []);
-      } catch (err) {
-        console.error("Error fetching users", err);
-        setUsers([]);
-      } finally {
-        setLoadingUsers(false);
-      }
-    }
-    fetchUsers();
-  }, [getAuthHeaders, effectiveAuthenticated]);
-
-  // -----------------
-  // Fetch Projects (server-side pagination using page & limit)
-  // -----------------
+  // Load Projects
   const fetchProjects = useCallback(async (page: number = 1, search: string = "") => {
-    if (!effectiveAuthenticated) {
-      setLoadingProjects(false);
-      return;
+    setLoadingProjects(true);
+    let all = db.getProjects() as any[];
+    if (search) {
+      all = all.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
     }
-    try {
-      setLoadingProjects(true);
-      const headers = getAuthHeaders();
-      const params = new URLSearchParams({ page: String(page), limit: String(projectsPerPage) });
-      if (search.trim()) params.set('search', search.trim());
-      const res = await fetch(`/api/admin/projects?${params.toString()}`, { headers, credentials: 'include' });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const data = await res.json();
-      const rawProjects: any[] = Array.isArray(data.projects) ? data.projects : [];
-      const normalized = rawProjects.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        progress: p.progress,
-        updatedAt: p.updatedAt || p.updated_at,
-        statuses: p.statuses,
-        status_title: p.status_title,
-        priority: p.priority,
-        startDate: p.startDate || p.start_date,
-        endDate: p.endDate || p.end_date,
-        teamId: p.teamId || p.team_id,
-        ownerId: p.ownerId || p.owner_id,
-        members: p.members,
-        team: p.team,
-        owner: p.owner,
-      }));
-      setProjects(normalized);
-      setTotalProjects(data.total || 0);
-      setTotalProjectsPages(data.totalPages || Math.max(1, Math.ceil((data.total || 0) / projectsPerPage)));
-      setProjectsPage(data.page || page);
-    } catch (err) {
-      console.error("Error fetching projects", err);
-      setProjects([]);
-      setTotalProjects(0);
-      setTotalProjectsPages(0);
-    } finally {
-      setLoadingProjects(false);
-    }
-  }, [getAuthHeaders, effectiveAuthenticated, projectsPerPage]);
+    const start = (page - 1) * projectsPerPage;
+    const paginated = all.slice(start, start + projectsPerPage);
+
+    setProjects(paginated.map(p => ({
+      ...p,
+      updatedAt: p.updatedAt?.toISOString() || new Date().toISOString()
+    })));
+    setTotalProjects(all.length);
+    setTotalProjectsPages(Math.ceil(all.length / projectsPerPage));
+    setProjectsPage(page);
+    setLoadingProjects(false);
+  }, [projectsPerPage]);
 
   useEffect(() => {
-    if (effectiveAuthenticated) {
-      fetchProjects(1, "");
-    } else {
-      setLoadingProjects(false);
-    }
-  }, [effectiveAuthenticated, fetchProjects]);
+    fetchProjects(1, projectsSearch);
+  }, [fetchProjects, projectsSearch]);
 
-  // -----------------
-  // Fetch Teams with Pagination
-  // -----------------
+  // Load Teams
   const fetchTeams = useCallback(async (page: number = 1) => {
-    if (!effectiveAuthenticated) {
-      setLoadingTeams(false);
-      return;
-    }
+    setLoadingTeams(true);
+    const all = db.getTeams();
+    const start = (page - 1) * teamsPerPage;
+    const paginated = all.slice(start, start + teamsPerPage);
 
-    try {
-      setLoadingTeams(true);
-      const headers = getAuthHeaders();
-      const res = await fetch(`/api/teams?page=${page}&limit=${teamsPerPage}`, { 
-        headers, 
-        credentials: 'include' 
-      });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const data = await res.json();
-      
-      // Handle paginated response
-      setTeams(Array.isArray(data.teams) ? data.teams : []);
-      setTotalTeams(data.total || 0);
-      setTotalTeamsPages(Math.ceil((data.total || 0) / teamsPerPage));
-      setTeamsPage(page);
-    } catch (err) {
-      console.error("Error fetching teams", err);
-      setTeams([]);
-      setTotalTeams(0);
-      setTotalTeamsPages(0);
-    } finally {
-      setLoadingTeams(false);
-    }
-  }, [getAuthHeaders, teamsPerPage, effectiveAuthenticated]);
+    setTeams(paginated.map(t => ({
+      id: t.id,
+      name: t.name,
+      members: [] // Simplified for mock
+    })));
+    setTotalTeams(all.length);
+    setTotalTeamsPages(Math.ceil(all.length / teamsPerPage));
+    setTeamsPage(page);
+    setLoadingTeams(false);
+  }, [teamsPerPage]);
 
   useEffect(() => {
-    if (effectiveAuthenticated) {
-      fetchTeams(1);
-    } else {
-      // Avoid indefinite loading when unauthenticated callers use the hook (e.g., modal pages)
-      setLoadingTeams(false);
-    }
-  }, [fetchTeams, effectiveAuthenticated]);
+    fetchTeams(1);
+  }, [fetchTeams]);
 
-  // -----------------
-  // Fetch Tasks
-  // -----------------
+  // Load Tasks
   useEffect(() => {
-    if (!effectiveAuthenticated) {
-      setLoadingTasks(false);
-      return;
-    }
+    setLoadingTasks(true);
+    const mockTasks = db.getTasks().map(t => ({
+      id: t.id,
+      title: t.title,
+      description: t.description || "",
+      status: String(t.status_title).toLowerCase(),
+      completed: t.status_title === 'Done',
+      projectId: t.project_id // Direct project relation
+    }));
+    setTasks(mockTasks as any);
+    setLoadingTasks(false);
+  }, []);
 
-    async function fetchTasks() {
-      try {
-        const headers = getAuthHeaders();
-        const res = await fetch("/api/tasks", { headers, credentials: 'include' });
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        const data = await res.json();
-        setTasks(Array.isArray(data) ? data : data.tasks || []);
-      } catch (err) {
-        console.error("Error fetching tasks", err);
-        setTasks([]);
-      } finally {
-        setLoadingTasks(false);
-      }
-    }
-    fetchTasks();
-  }, [getAuthHeaders, effectiveAuthenticated]);
+  // Actions
+  const approveUser = useCallback(async (id: number) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, isApproved: true } : u));
+  }, []);
 
-  // -----------------
-  // User Actions
-  // -----------------
-  const approveUser = useCallback(
-    async (id: number) => {
-      try {
-        const res = await fetch(`/api/admin/users/${id}/approve`, {
-          method: "PATCH",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify({ isApproved: true }),
-        });
-        if (!res.ok) throw new Error("Failed to approve user");
-        const data = await res.json();
-        const updated = data.user || { id, isApproved: true };
-        setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updated } : u)));
-      } catch (err) {
-        console.error("Error approving user", err);
-      }
-    },
-    [getAuthHeaders]
-  );
+  const rejectUser = useCallback(async (id: number) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, isApproved: false } : u));
+  }, []);
 
-  const rejectUser = useCallback(
-    async (id: number) => {
-      try {
-        const res = await fetch(`/api/admin/users/${id}/reject`, {
-          method: "PATCH",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify({ isApproved: false }),
-        });
-        if (!res.ok) throw new Error("Failed to reject user");
-        const data = await res.json();
-        const updated = data.user || { id, isApproved: false };
-        setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updated } : u)));
-      } catch (err) {
-        console.error("Error rejecting user", err);
-      }
-    },
-    [getAuthHeaders]
-  );
+  const deleteUser = useCallback(async (id: number) => {
+    setUsers(prev => prev.filter(u => u.id !== id));
+  }, []);
 
-  const deleteUser = useCallback(
-    async (id: number) => {
-      try {
-        const res = await fetch(`/api/admin/users/${id}`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-        if (!res.ok) throw new Error("Failed to delete user");
-        setUsers(prev => prev.filter(u => u.id !== id));
-      } catch (err) {
-        console.error("Error deleting user", err);
-      }
-    },
-    [getAuthHeaders]
-  );
+  const editUser = useCallback(async (id: number, updates: Partial<User>) => {
+    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+  }, []);
 
-  const editUser = useCallback(
-    async (id: number, updates: Partial<User>) => {
-      try {
+  const createTeam = useCallback(async (team: any) => {
+    const newTeam = { id: Date.now(), ...team, members: [] };
 
-        const res = await fetch(`/api/admin/users/${id}`, {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(updates),
-        });
+    // 1) Update the mock database
+    db.teams.unshift(newTeam as any);
 
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.error || "Failed to update user");
-        }
+    // 2) Optimistically update frontend state so the new team is visible immediately on page 1
+    setTeams(prev => {
+      const updated = [
+        { id: newTeam.id, name: newTeam.name, members: [] },
+        ...prev,
+      ];
+      return updated.slice(0, teamsPerPage);
+    });
+    setTotalTeams(prev => prev + 1);
+    setTeamsPage(1);
 
-        const result = await res.json();
-        const updatedUser: User = result.user || result;
-        setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updatedUser } : u)));
-      } catch (err) {
-        console.error("Error editing user", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
+    // 3) Also refetch from page 1 to stay in sync with any other logic
+    fetchTeams(1);
 
-  // -----------------
-  // Team Actions
-  // -----------------
-  const createTeam = useCallback(
-    async (team: { name: string; members: number[]; description?: string }) => {
-      try {
-        if (!team.members || team.members.length === 0) {
-          throw new Error("At least one member is required");
-        }
+    return newTeam;
+  }, [fetchTeams, teamsPerPage]);
 
-        // Step 1: Create the team
-        const createRes = await fetch(`/api/teams`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify({
-            name: team.name,
-            description: team.description || `Team for ${team.name}`,
-          }),
-        });
+  const addTaskToProject = useCallback(async (projectId: number, task: any) => {
+    const newTask = db.createTask({ ...task, project_id: projectId });
+    return newTask;
+  }, []);
 
-        if (!createRes.ok) {
-          const errorData = await createRes.json().catch(() => ({}));
-          if (createRes.status === 409) {
-            throw new Error("A team with this name already exists");
-          }
-          throw new Error(errorData?.error || "Failed to create team");
-        }
+  const createProject = useCallback(async (project: any) => {
+    db.createProject({ ...project, owner_id: 1 });
+    fetchProjects(1, projectsSearch);
+  }, [fetchProjects, projectsSearch]);
 
-        const createResult = await createRes.json();
-        const newTeam: Team = createResult.team || createResult;
+  const editProject = useCallback(async (id: number, updates: any) => {
+    db.updateProject(id, updates);
+    fetchProjects(projectsPage, projectsSearch);
+  }, [fetchProjects, projectsPage, projectsSearch]);
 
-        // Step 2: Assign members to the team
-        if (team.members.length > 0) {
-          const assignRes = await fetch(`/api/teams/${newTeam.id}/assign`, {
-            method: "POST",
-            headers: getAuthHeaders(),
-            credentials: 'include',
-            body: JSON.stringify({ userIds: team.members }),
-          });
+  const deleteProject = useCallback(async (id: number) => {
+    db.projects = db.projects.filter(p => p.id !== id);
+    fetchProjects(1, projectsSearch);
+  }, [fetchProjects, projectsSearch]);
 
-          if (!assignRes.ok) {
-            const errorData = await assignRes.json().catch(() => ({}));
-            console.warn("Failed to assign members:", errorData?.error);
-            // Don't throw here - team was created successfully
-          }
-        }
+  const deleteTeam = useCallback(async (id: number) => {
+    db.teams = db.teams.filter(t => t.id !== id);
+    fetchTeams(1);
+  }, [fetchTeams]);
 
-        // Refresh teams list to get updated data with members
-        await fetchTeams(teamsPage);
-        return newTeam;
-      } catch (err) {
-        console.error("Error creating team", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders, fetchTeams, teamsPage]
-  );
-
-  const addTaskToProject = useCallback(
-    async (projectId: number, task: { title: string; description?: string }) => {
-      try {
-        const res = await fetch(`/api/projects/${projectId}/tasks`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(task),
-        });
-        if (!res.ok) throw new Error("Failed to add task");
-        return await res.json();
-      } catch (err) {
-        console.error("Error adding task to project", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders]
-  );
+  const deleteTeamCascade = useCallback(async (id: number) => {
+    db.teams = db.teams.filter(t => t.id !== id);
+    fetchTeams(1);
+  }, [fetchTeams]);
 
   const openProject = useCallback((projectId: number) => {
     window.location.href = `/admin/projects/${projectId}`;
   }, []);
 
-  const createProject = useCallback(
-    async (project: { name: string; description?: string; teamId: number; statusTitle?: string; customStatuses?: any[] }) => {
-      try {
-        const res = await fetch(`/api/projects`, {
-          method: "POST",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(project),
-        });
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData?.error || "Failed to create project");
-        }
-        await fetchProjects(projectsPage, projectsSearch);
-      } catch (err) {
-        console.error("Error creating project", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders, fetchProjects, projectsPage, projectsSearch]
-  );
-
-  const editProject = useCallback(
-    async (projectId: number, updates: any) => {
-      try {
-        const res = await fetch(`/api/projects/${projectId}`, {
-          method: "PATCH",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-          body: JSON.stringify(updates),
-        });
-        if (!res.ok) throw new Error("Failed to update project");
-        await fetchProjects(projectsPage, projectsSearch);
-      } catch (err) {
-        console.error("Error updating project", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders, fetchProjects, projectsPage, projectsSearch]
-  );
-
-  const deleteProject = useCallback(
-    async (projectId: number) => {
-      try {
-        const res = await fetch(`/api/projects/${projectId}`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-        if (!res.ok) throw new Error("Failed to delete project");
-        await fetchProjects(projectsPage, projectsSearch);
-      } catch (err) {
-        console.error("Error deleting project", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders, fetchProjects, projectsPage, projectsSearch]
-  );
-
-  const deleteTeam = useCallback(
-    async (teamId: number) => {
-      try {
-        const res = await fetch(`/api/teams/${teamId}`, {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          credentials: 'include',
-        });
-        if (!res.ok) throw new Error("Failed to delete team");
-        await fetchTeams(teamsPage);
-      } catch (err) {
-        console.error("Error deleting team", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders, fetchTeams, teamsPage]
-  );
-
-  const deleteTeamCascade = useCallback(
-    async (teamId: number) => {
-      try {
-        const res = await fetch(`/api/teams/${teamId}/cascade`, {
-          method: "DELETE",
-            headers: getAuthHeaders(),
-            credentials: 'include',
-        });
-        if (!res.ok) throw new Error("Failed to cascade delete team");
-        await fetchTeams(teamsPage);
-      } catch (err) {
-        console.error("Error cascading delete team", err);
-        throw err;
-      }
-    },
-    [getAuthHeaders, fetchTeams, teamsPage]
-  );
-
   return {
-    users,
-    loadingUsers,
-    approveUser,
-    rejectUser,
-    deleteUser,
-    editUser,
-
-    projects,
-    loadingProjects,
-    projectsPage,
-    projectsPerPage,
-    projectsSearch,
-    totalProjects,
-    totalProjectsPages,
-    setProjectsSearch,
-    fetchProjects,
-
-    teams,
-    loadingTeams,
-    teamsPage,
-    teamsPerPage,
-    totalTeams,
-    totalTeamsPages,
-    fetchTeams,
-
-    tasks,
-    loadingTasks,
-
-    openProject,
-    createProject,
-    createTeam,
-    editProject,
-    deleteProject,
-    addTaskToProject,
-
-    deleteTeam,
-    deleteTeamCascade,
+    users, loadingUsers, approveUser, rejectUser, deleteUser, editUser,
+    projects, loadingProjects, projectsPage, projectsPerPage, projectsSearch, totalProjects, totalProjectsPages, setProjectsSearch, fetchProjects,
+    teams, loadingTeams, teamsPage, teamsPerPage, totalTeams, totalTeamsPages, fetchTeams,
+    tasks, loadingTasks,
+    openProject, createProject, createTeam, editProject, deleteProject, addTaskToProject,
+    deleteTeam, deleteTeamCascade,
   };
 }

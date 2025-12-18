@@ -15,8 +15,8 @@ export interface TaskAttributes {
   deadline?: Date;
   expected_time: number; // in minutes
   spent_time: number; // in minutes
-  goal_id: number;
-  assigned_to_id: number;
+  project_id: number;
+  assigned_to_id?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -38,8 +38,8 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
   public deadline?: Date;
   public expected_time!: number;
   public spent_time!: number;
-  public goal_id!: number;
-  public assigned_to_id!: number;
+  public project_id!: number;
+  public assigned_to_id?: number;
 
   // Timestamps
   public readonly createdAt!: Date;
@@ -55,7 +55,7 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
   async notifyTaskChanges(previousValues?: Partial<TaskAttributes>) {
     try {
       // Get models with proper typing
-      const { Goal, Project } = this.sequelize.models;
+      const { Project } = this.sequelize.models;
       
       // Check if there's an assignee
       const assigneeId = this.assigned_to_id;
@@ -69,27 +69,18 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
         team_id: number;
       }
 
-      // Define the Goal model type with the project association
-      interface GoalModel extends Model<any, any> {
-        project?: ProjectModel;
-      }
-
-      // Fetch the goal with its project and team information
-      const goal = await (Goal as unknown as { findByPk: (id: number, options: any) => Promise<GoalModel | null> }).findByPk(this.goal_id, {
-        include: [{
-          model: Project,
-          as: 'project',
-          attributes: ['id', 'name', 'team_id']
-        }]
-      });
+      // Fetch the project directly
+      const project = await Project.findByPk(this.project_id, {
+        attributes: ['id', 'name', 'team_id']
+      }) as any;
       
-      if (!goal || !goal.project) return;
+      if (!project) return;
       
       // Notify the assignee about the task assignment
       await notifyTaskAssigned(
         assigneeId,
         this.title,
-        goal.project.name,
+        project.name,
         this.id
       );
       
@@ -98,7 +89,7 @@ class Task extends Model<TaskAttributes, TaskCreationAttributes> implements Task
         await notifyTaskCompleted(
           [assigneeId],  // userIds should be an array
           this.title,
-          goal.project.name,  // Add project name
+          project.name,  // Add project name
           this.id
         );
       }
@@ -158,17 +149,15 @@ export const initTask = (sequelize: Sequelize) => {
         defaultValue: 0,
         comment: 'Spent time in minutes',
       },
-      goal_id: {
+      project_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-          model: 'goals',
+          model: 'projects',
           key: 'id',
         },
         onDelete: 'CASCADE',
       },
-      // Removed project_id field as per database documentation
-      // Tasks should only belong to goals, not directly to projects
       assigned_to_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -189,7 +178,7 @@ export const initTask = (sequelize: Sequelize) => {
           fields: ['status_title'],
         },
         {
-          fields: ['goal_id'],
+          fields: ['project_id'],
         },
         {
           fields: ['assigned_to_id'],

@@ -11,7 +11,7 @@ type Project = {
 export default function ProjectCard({ project }: { project: Project }) {
   return (
     <Link href={`/projects/${project.id}`}>
-      <div className="bg-white/5 p-3 rounded-lg shadow-md hover:bg-white/10 transition-colors border border-white/10">
+      <div className="bg-white/5 p-3 rounded-lg shadow-md border border-white/10">
         <h3 className="text-sm font-semibold mb-1 text-white">{project.name}</h3>
         <p className="text-xs text-gray-300">{project.description}</p>
       </div>

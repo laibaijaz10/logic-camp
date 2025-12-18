@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ valid: false, message: "No token provided" }, { status: 401 });
     }
 
-    const secret = process.env.JWT_SECRET || "default_secret";
+    const secret = process.env.JWT_SECRET || "your-super-secret-jwt-key";
 
     try {
-      await jwtVerify(token, new TextEncoder().encode(secret));
-      return NextResponse.json({ valid: true });
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+      return NextResponse.json({ valid: true, user: payload });
     } catch (err) {
       return NextResponse.json({ valid: false, message: "Invalid token" }, { status: 401 });
     }
@@ -30,11 +30,11 @@ export async function GET(req: NextRequest) {
     }
 
     const token = authHeader.split(" ")[1];
-    const secret = process.env.JWT_SECRET || "default_secret";
+    const secret = process.env.JWT_SECRET || "your-super-secret-jwt-key";
 
     try {
-      await jwtVerify(token, new TextEncoder().encode(secret));
-      return NextResponse.json({ valid: true });
+      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+      return NextResponse.json({ valid: true, user: payload });
     } catch (err) {
       return NextResponse.json({ valid: false, message: "Invalid token" }, { status: 401 });
     }

@@ -1,11 +1,10 @@
 'use client';
 import React, { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  CheckSquare, 
-  FolderOpen, 
-  UsersRound, 
-  MessageSquare,
+import {
+  LayoutDashboard,
+  CheckSquare,
+  FolderOpen,
+  UsersRound,
   BarChart3
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -24,7 +23,6 @@ export default function UserSidebar({ activeSection, onSectionChange }: UserSide
     { id: 'my-tasks', label: 'My Tasks', icon: CheckSquare, description: 'Task Management' },
     { id: 'projects', label: 'Projects', icon: FolderOpen, description: 'My Projects' },
     { id: 'teams', label: 'Teams', icon: UsersRound, description: 'Team Collaboration' },
-    { id: 'messages', label: 'Messages', icon: MessageSquare, description: 'Communication' },
   ];
 
   const handleSectionClick = (sectionId: string) => {
@@ -46,16 +44,15 @@ export default function UserSidebar({ activeSection, onSectionChange }: UserSide
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-r border-slate-700/50 shadow-2xl overflow-y-auto z-40 transition-transform duration-300 lg:translate-x-0 ${
-        isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
+      <aside className={`fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-xl border-r border-slate-700/50 shadow-2xl overflow-y-auto z-40 transition-transform duration-300 lg:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}>
         {/* Sidebar Header */}
         <div className="p-4 border-b border-slate-700/50">
           <div className="flex items-center gap-2">
@@ -74,21 +71,19 @@ export default function UserSidebar({ activeSection, onSectionChange }: UserSide
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
-            
+
             return (
               <div key={item.id} className="space-y-1">
                 {/* Main Navigation Item */}
                 <button
                   onClick={() => handleSectionClick(item.id)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 active:scale-[0.98] transform ${
-                    isActive
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all duration-300 group focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 active:scale-[0.98] transform ${isActive
                       ? 'bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 text-white shadow-lg shadow-indigo-500/20 scale-[1.02]'
                       : 'text-slate-300 hover:bg-slate-700/50 hover:text-white border border-transparent hover:border-slate-600/50 hover:scale-[1.02] hover:shadow-md hover:shadow-slate-500/10'
-                  }`}
+                    }`}
                 >
-                  <Icon className={`w-4 h-4 transition-colors ${
-                    isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-300'
-                  }`} />
+                  <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-indigo-400' : 'text-slate-400 group-hover:text-slate-300'
+                    }`} />
                   <div className="flex-1">
                     <div className="font-medium text-sm">{item.label}</div>
                     <div className="text-xs text-slate-500 group-hover:text-slate-400">

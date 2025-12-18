@@ -1,20 +1,9 @@
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: Date;
-  // Add other fields as needed
-}
-
-const API_URL = '/api/users';
+import { db } from '@/lib/mockData';
+import { User } from '@/types';
 
 export const updateUser = async (id: number, data: Partial<User>) => {
-  const res = await fetch(`${API_URL}/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error('Failed to update user');
-  return res.json();
+  const index = db.users.findIndex(u => u.id === id);
+  if (index === -1) throw new Error('User not found');
+  db.users[index] = { ...db.users[index], ...data } as any;
+  return db.users[index];
 };

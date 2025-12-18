@@ -7,7 +7,6 @@ export async function middleware(req: NextRequest) {
   // Allow public and API routes without checks
   if (
     pathname.startsWith('/api') ||
-    pathname.startsWith('/socket.io') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/static') ||
     pathname === '/login' ||
@@ -19,6 +18,11 @@ export async function middleware(req: NextRequest) {
 
   // Admin route guard
   if (pathname.startsWith('/admin')) {
+    // In development, allow admin routes without JWT so mock login works
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.next();
+    }
+
     // Allow admin login page without token
     if (pathname === '/admin/login') {
       return NextResponse.next();

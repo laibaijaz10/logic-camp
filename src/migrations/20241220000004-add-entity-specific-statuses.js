@@ -2,7 +2,7 @@
 
 /**
  * Add Entity-Specific Statuses
- * Description: Add entity_type field to statuses table to allow different statuses for projects, goals, and tasks
+ * Description: Add entity_type field to statuses table to allow different statuses for projects, tasks, and global entries
  */
 
 module.exports = {
@@ -10,7 +10,7 @@ module.exports = {
     await queryInterface.sequelize.transaction(async (t) => {
       // Add entity_type column to statuses table
       await queryInterface.addColumn('statuses', 'entity_type', {
-        type: Sequelize.ENUM('project', 'goal', 'task', 'global'),
+        type: Sequelize.ENUM('project', 'task', 'global'),
         allowNull: false,
         defaultValue: 'global',
       }, { transaction: t });
@@ -33,12 +33,6 @@ module.exports = {
         { name: 'on-hold', description: 'Project is temporarily paused', color: '#F59E0B', is_default: true, entity_type: 'project' },
         { name: 'completed', description: 'Project has been completed', color: '#10B981', is_default: true, entity_type: 'project' },
         { name: 'cancelled', description: 'Project has been cancelled', color: '#EF4444', is_default: true, entity_type: 'project' },
-
-        // Goal statuses
-        { name: 'todo', description: 'Goal is pending', color: '#6B7280', is_default: true, entity_type: 'goal' },
-        { name: 'in-progress', description: 'Goal is being worked on', color: '#3B82F6', is_default: true, entity_type: 'goal' },
-        { name: 'review', description: 'Goal is under review', color: '#8B5CF6', is_default: true, entity_type: 'goal' },
-        { name: 'completed', description: 'Goal has been completed', color: '#10B981', is_default: true, entity_type: 'goal' },
 
         // Task statuses
         { name: 'todo', description: 'Task is pending', color: '#6B7280', is_default: true, entity_type: 'task' },

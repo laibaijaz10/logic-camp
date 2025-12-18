@@ -37,26 +37,7 @@ module.exports = {
         }, { transaction: t });
       }
 
-      // 2) Goals: remove status_id, ensure statuses + status_title
-      await removeIfExists('goals', 'status_id');
-      const goalsDesc = await queryInterface.describeTable('goals');
-      if (!goalsDesc['statuses']) {
-        await queryInterface.addColumn('goals', 'statuses', {
-          type: Sequelize.JSON,
-          allowNull: true,
-          comment: 'JSON array of status objects with title, description, and color'
-        }, { transaction: t });
-      }
-      if (!goalsDesc['status_title']) {
-        await queryInterface.addColumn('goals', 'status_title', {
-          type: Sequelize.STRING(50),
-          allowNull: false,
-          defaultValue: 'todo',
-          comment: 'Current status title'
-        }, { transaction: t });
-      }
-
-      // 3) Tasks: remove status_id, ensure statuses + status_title (time columns stay)
+      // 2) Tasks: remove status_id, ensure statuses + status_title (time columns stay)
       await removeIfExists('tasks', 'status_id');
       const tasksDesc = await queryInterface.describeTable('tasks');
       if (!tasksDesc['statuses']) {

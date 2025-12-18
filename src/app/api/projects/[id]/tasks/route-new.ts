@@ -13,11 +13,9 @@ export async function GET(
     const projectId = Number(resolvedParams.id);
 
     // Find all tasks directly for this project
-    const tasks = await Task.findAll({
+    const tasks = await Task.findAll({ 
       where: { project_id: projectId },
-      include: [
-        { model: User, as: "assignedTo", attributes: ["id", "name", "email"] },
-      ],
+      include: [{ model: User, as: "assignedTo", attributes: ["id", "name", "email"] }]
     });
 
     return NextResponse.json(tasks, { status: 200 });
@@ -36,11 +34,12 @@ export async function POST(
 ) {
   try {
     const { Task, User, Project } = await getModels();
-
+    
     // Authenticate user
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
-
+    const payload = authResult;
+    
     const resolvedParams = await params;
     const projectId = Number(resolvedParams.id);
     const body = await req.json();
@@ -65,20 +64,14 @@ export async function POST(
     if (body.dueDate) {
       const due = new Date(body.dueDate);
       if (project.start_date && due < new Date(project.start_date)) {
-        return NextResponse.json(
-          { error: "Task deadline is before project start_date" },
-          { status: 422 }
-        );
+        return NextResponse.json({ error: 'Task deadline is before project start_date' }, { status: 422 });
       }
       if (project.end_date && due > new Date(project.end_date)) {
-        return NextResponse.json(
-          { error: "Task deadline is after project end_date" },
-          { status: 422 }
-        );
+        return NextResponse.json({ error: 'Task deadline is after project end_date' }, { status: 422 });
       }
     }
 
-    // Create task with direct project association
+    // Create task with proper associations
     const newTask = await Task.create({
       title: body.title,
       description: body.description || "",
@@ -113,11 +106,11 @@ export async function PATCH(
 ) {
   try {
     const { Task, User } = await getModels();
-
+    
     // Authenticate user
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
-
+    
     const resolvedParams = await params;
     const projectId = Number(resolvedParams.id);
     const body = await req.json();
@@ -129,15 +122,15 @@ export async function PATCH(
         { status: 400 }
       );
     }
-
+    
     // Find task that belongs to this project
     const task = await Task.findOne({
-      where: {
-        id: taskId,
-        project_id: projectId,
-      },
+      where: { 
+        id: taskId, 
+        project_id: projectId
+      }
     });
-
+    
     if (!task) {
       return NextResponse.json(
         { error: "Task not found" },

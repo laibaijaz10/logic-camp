@@ -57,7 +57,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
       await markAsRead(notificationId);
       setNotificationData(prev => ({
         ...prev,
-        notifications: prev.notifications.map(n => 
+        notifications: prev.notifications.map(n =>
           n.id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
         ),
         unreadCount: Math.max(0, prev.unreadCount - 1)
@@ -90,8 +90,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
         return <Calendar className="h-5 w-5 text-blue-500" />;
       case 'task_completed':
         return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'chat_unread':
-        return <MessageSquare className="h-5 w-5 text-orange-500" />;
+
       case 'project_updated':
         return <AlertCircle className="h-5 w-5 text-yellow-500" />;
       case 'team_added':
@@ -109,8 +108,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
         return 'border-l-blue-500 bg-blue-50';
       case 'task_completed':
         return 'border-l-green-500 bg-green-50';
-      case 'chat_unread':
-        return 'border-l-orange-500 bg-orange-50';
+
       case 'project_updated':
         return 'border-l-yellow-500 bg-yellow-50';
       case 'team_added':
@@ -124,7 +122,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
     if (!notification.isRead) {
       handleMarkAsRead(notification.id);
     }
-    
+
     // Optional: Navigate to related entity
     if (notification.relatedEntityType && notification.relatedEntityId) {
       // This could be implemented to navigate to the related project, task, etc.
@@ -184,9 +182,8 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
                 {notificationData.notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      !notification.isRead ? `border-l-4 ${getNotificationColor(notification.type)}` : 'hover:bg-gray-50'
-                    }`}
+                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${!notification.isRead ? `border-l-4 ${getNotificationColor(notification.type)}` : 'hover:bg-gray-50'
+                      }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start space-x-3">
@@ -195,9 +192,8 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className={`text-sm font-medium ${
-                            !notification.isRead ? 'text-gray-900' : 'text-gray-700'
-                          }`}>
+                          <p className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'
+                            }`}>
                             {notification.title}
                           </p>
                           {!notification.isRead && (

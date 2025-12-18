@@ -5,7 +5,7 @@ export interface UserAttributes {
   id: number;
   name: string;
   email: string;
-  password: string;
+  password?: string;
   role: "admin" | "team_lead" | "employee";
   is_active: boolean;
   is_approved: boolean;
@@ -16,7 +16,7 @@ export interface UserAttributes {
 
 // Creation attributes: id, createdAt, updatedAt are optional
 export interface UserCreationAttributes
-  extends Optional<UserAttributes, "id" | "createdAt" | "updatedAt"> {}
+  extends Optional<UserAttributes, "id" | "createdAt" | "updatedAt"> { }
 
 // Model class
 class User extends Model<UserAttributes, UserCreationAttributes>
@@ -33,8 +33,8 @@ class User extends Model<UserAttributes, UserCreationAttributes>
   declare notifications?: object | null;
 
   // timestamps
-   declare readonly createdAt: Date;
-   declare readonly updatedAt: Date;
+  declare readonly createdAt: Date;
+  declare readonly updatedAt: Date;
 
   // Associations placeholder
   public static associate(models: any) {

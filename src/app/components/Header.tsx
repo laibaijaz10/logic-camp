@@ -38,9 +38,6 @@ const Header: React.FC<HeaderProps> = ({
         <Link href="/tasks" className="hover:underline">
           Tasks
         </Link>
-        <Link href="/messages" className="hover:underline">
-          Messages
-        </Link>
       </nav>
 
       {/* User Info and Logout */}

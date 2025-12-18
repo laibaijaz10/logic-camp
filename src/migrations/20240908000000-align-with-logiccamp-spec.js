@@ -5,7 +5,6 @@
  * - users: add notifications JSON, remove is_active, use underscored timestamps
  * - teams: drop is_active, allow NULL team_lead_id, add index
  * - projects: files JSON, start_date/end_date DATEONLY, FKs and indexes, underscored
- * - goals: deadline DATEONLY, underscored
  * - tasks: drop priority/created_by_id/estimates, assigned_to_id nullable, deadline DATEONLY, underscored
  * - task_comments: files JSON, underscored
  */
@@ -42,13 +41,6 @@ module.exports = {
       await qi.changeColumn('projects', 'owner_id', { type: Sequelize.INTEGER, allowNull: false, references: { model: 'users', key: 'id' }, onDelete: 'SET NULL', onUpdate: 'CASCADE' }, { transaction: t }).catch(() => {});
     });
 
-    // GOALS
-    await queryInterface.sequelize.transaction(async (t) => {
-      const qi = queryInterface;
-      await qi.changeColumn('goals', 'deadline', { type: Sequelize.DATEONLY, allowNull: true }, { transaction: t }).catch(() => {});
-      await qi.changeColumn('goals', 'project_id', { type: Sequelize.INTEGER, allowNull: false, references: { model: 'projects', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }, { transaction: t }).catch(() => {});
-    });
-
     // TASKS
     await queryInterface.sequelize.transaction(async (t) => {
       const qi = queryInterface;
@@ -57,7 +49,6 @@ module.exports = {
       await qi.removeColumn('tasks', 'estimated_hours', { transaction: t }).catch(() => {});
       await qi.removeColumn('tasks', 'actual_hours', { transaction: t }).catch(() => {});
       await qi.changeColumn('tasks', 'deadline', { type: Sequelize.DATEONLY, allowNull: true }, { transaction: t }).catch(() => {});
-      await qi.changeColumn('tasks', 'goal_id', { type: Sequelize.INTEGER, allowNull: false, references: { model: 'goals', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }, { transaction: t }).catch(() => {});
       await qi.changeColumn('tasks', 'assigned_to_id', { type: Sequelize.INTEGER, allowNull: true, references: { model: 'users', key: 'id' }, onDelete: 'SET NULL', onUpdate: 'CASCADE' }, { transaction: t }).catch(() => {});
     });
 

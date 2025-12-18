@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
-import { Project } from "../../admin/hooks/useAdminData"; // Reuse types from admin
+import { Project } from "../../admin/hooks/useAdminData";
+import { db } from "@/lib/mockData";
 
 export default function useUserData() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -12,18 +12,8 @@ export default function useUserData() {
   const fetchUserProjects = useCallback(async () => {
     try {
       setLoadingProjects(true);
-      const res = await fetch("/api/user/projects", {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        setError("Failed to fetch user projects");
-      }
-
-      const data = await res.json();
-      setProjects(data.projects || []);
+      const all = db.getProjects() as any[];
+      setProjects(all);
     } catch (err) {
       setError("An error occurred while fetching projects");
     } finally {
@@ -38,6 +28,6 @@ export default function useUserData() {
   return {
     projects,
     loadingProjects,
-    fetchUserProjects, // Expose for refresh if needed
+    fetchUserProjects,
   };
 }

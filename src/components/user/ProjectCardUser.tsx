@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FolderKanban, Users, Clock, AlertCircle, CheckCircle, Zap, Calendar } from "lucide-react";
+import { getTasksByProject } from "@/services/taskService";
 
 export type UserProject = {
   id: number;
@@ -51,18 +52,36 @@ const formatDeadlineText = (remainingDays: number | null): string => {
 export default function ProjectCardUser({ project, index }: { project: UserProject; index: number }) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
+  const [taskCount, setTaskCount] = useState<number | null>(null);
 
   const statusKey = normalizeStatus(project.status_title);
   const statusCfg = STATUS_CONFIG[statusKey];
   const RemainingDays = getRemainingDays(project.end_date || project.endDate || null);
   const StatusIcon = statusCfg.icon;
 
+  useEffect(() => {
+    let mounted = true;
+    const loadTasks = async () => {
+      try {
+        const res = await getTasksByProject(project.id);
+        const arr = (res as any)?.tasks ?? res;
+        if (!mounted) return;
+        setTaskCount(Array.isArray(arr) ? arr.length : 0);
+      } catch {
+        if (mounted) setTaskCount(0);
+      }
+    };
+    loadTasks();
+    return () => {
+      mounted = false;
+    };
+  }, [project.id]);
+
   const handleClick = () => router.push(`/projects/${project.id}`);
 
   return (
     <div
-      className="group animate-fadeInUp transform transition-all duration-700 hover:scale-[1.02] w-full mx-auto"
-      style={{ animationDelay: `${0.1 * index}s` }}
+      className="group transform transition-all duration-300 hover:scale-[1.02] w-full mx-auto"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -102,7 +121,7 @@ export default function ProjectCardUser({ project, index }: { project: UserProje
             </div>
           </div>
 
-          <div className="mb-3 sm:mb-4 grid grid-cols-2 gap-2">
+          <div className="mb-3 sm:mb-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className={`h-full flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all duration-300 ${isHovered ? 'bg-purple-500/20 border-purple-400/40 shadow-lg shadow-purple-500/20' : 'bg-purple-500/10 border-purple-500/20'}`}>
               <div className="p-0.5 sm:p-1 bg-purple-500/20 rounded-md sm:rounded-lg">
                 <Users className={`h-3 w-3 sm:h-4 sm:w-4 ${isHovered ? 'text-purple-300' : 'text-purple-400'}`} />
@@ -123,7 +142,29 @@ export default function ProjectCardUser({ project, index }: { project: UserProje
                   <p className={`font-semibold text-xs ${isHovered ? 'text-amber-300' : 'text-amber-400'}`}>{formatDeadlineText(RemainingDays)} <span className="text-xs text-gray-400 hidden sm:inline">{new Date((project.end_date || project.endDate) as string).toLocaleDateString()}</span></p>
                 </div>
               </div>
-            ) : <div />}
+            ) : (
+              <div className="h-full flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border border-slate-700/40 bg-slate-800/40">
+                <div className="p-0.5 sm:p-1 bg-slate-700/50 rounded-md sm:rounded-lg">
+                  <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-400 uppercase tracking-wider hidden sm:block">Deadline</p>
+                  <p className="font-semibold text-xs text-slate-400">No deadline</p>
+                </div>
+              </div>
+            )}
+
+            <div className={`h-full flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg sm:rounded-xl border transition-all duration-300 ${isHovered ? 'bg-cyan-500/20 border-cyan-400/40 shadow-lg shadow-cyan-500/20' : 'bg-cyan-500/10 border-cyan-500/20'}`}>
+              <div className="p-0.5 sm:p-1 bg-cyan-500/20 rounded-md sm:rounded-lg">
+                <FolderKanban className={`h-3 w-3 sm:h-4 sm:w-4 ${isHovered ? 'text-cyan-300' : 'text-cyan-400'}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-gray-400 uppercase tracking-wider hidden sm:block">Total Tasks</p>
+                <p className={`font-bold text-xs sm:text-sm ${isHovered ? 'text-cyan-300' : 'text-cyan-400'}`}>
+                  {taskCount !== null ? taskCount : '—'}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 px-1.5 sm:px-2 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border transition-all duration-300 flex-1 bg-cyan-500/10 border-cyan-500/20">

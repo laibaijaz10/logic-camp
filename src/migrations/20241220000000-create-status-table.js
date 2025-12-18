@@ -2,7 +2,7 @@
 
 /**
  * Create Status Table
- * Description: Creates the statuses table with default statuses for projects, goals, and tasks
+ * Description: Creates the statuses table with default statuses for projects and tasks
  */
 
 module.exports = {
@@ -64,7 +64,7 @@ module.exports = {
       await queryInterface.bulkInsert('statuses', [
         {
           name: 'todo',
-          description: 'Task/Project/Goal is pending',
+          description: 'Task or project is pending',
           color: '#6B7280',
           is_default: true,
           created_at: new Date(),
@@ -72,7 +72,7 @@ module.exports = {
         },
         {
           name: 'inProgress',
-          description: 'Task/Project/Goal is in progress',
+          description: 'Task or project is in progress',
           color: '#3B82F6',
           is_default: true,
           created_at: new Date(),
@@ -80,7 +80,7 @@ module.exports = {
         },
         {
           name: 'testing',
-          description: 'Task/Project/Goal is being tested',
+          description: 'Task or project is being tested',
           color: '#F59E0B',
           is_default: true,
           created_at: new Date(),
@@ -88,7 +88,7 @@ module.exports = {
         },
         {
           name: 'review',
-          description: 'Task/Project/Goal is under review',
+          description: 'Task or project is under review',
           color: '#8B5CF6',
           is_default: true,
           created_at: new Date(),
@@ -96,7 +96,7 @@ module.exports = {
         },
         {
           name: 'done',
-          description: 'Task/Project/Goal is completed',
+          description: 'Task or project is completed',
           color: '#10B981',
           is_default: true,
           created_at: new Date(),

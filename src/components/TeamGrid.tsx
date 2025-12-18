@@ -25,7 +25,7 @@ export default function TeamGrid({ teams, onDeleteTeam, onEditTeam, deletingTeam
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {teams.map((team, index) => (
-        <TeamCard 
+        <TeamCard
           key={team.id}
           team={team}
           index={index}
@@ -36,26 +36,4 @@ export default function TeamGrid({ teams, onDeleteTeam, onEditTeam, deletingTeam
       ))}
     </div>
   );
-}
-
-// Add CSS animation keyframes
-const styles = `
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-`;
-
-// Inject styles if not already present
-if (typeof document !== 'undefined' && !document.getElementById('teams-grid-styles')) {
-  const styleSheet = document.createElement('style');
-  styleSheet.id = 'teams-grid-styles';
-  styleSheet.textContent = styles;
-  document.head.appendChild(styleSheet);
 }

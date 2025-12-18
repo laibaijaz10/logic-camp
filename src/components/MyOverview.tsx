@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { getProjects } from '@/services/projectService';
-import { getGoalsByProject } from '@/services/goalService';
-import { getTasksByGoal } from '@/services/taskService';
-import { useUser as useUserContext } from '@/lib/context/UserContext';
+import React, { useEffect, useMemo, useState } from "react";
+import { getProjects } from "@/services/projectService";
+import { getTasksByProject } from "@/services/taskService";
+import { useUser as useUserContext } from "@/lib/context/UserContext";
 
 type StatCardProps = { title: string; value: string | number; hint?: string };
 
@@ -30,22 +29,24 @@ export default function MyOverview() {
       try {
         const p = await getProjects();
         setProjects(p);
-        // Fetch tasks via goals per project and filter by assignee
-        const tasks: any[] = [];
+
+        const collected: any[] = [];
         for (const proj of p) {
           try {
-            const goals = await getGoalsByProject(proj.id);
-            for (const goal of (Array.isArray((goals as any)?.goals) ? (goals as any).goals : goals)) {
-              try {
-                const tRes = await getTasksByGoal(goal.id);
-                const tArr = (tRes as any)?.tasks ?? tRes;
-                tasks.push(...(Array.isArray(tArr) ? tArr : []));
-              } catch {}
+            const res = await getTasksByProject(proj.id);
+            const tArr = (res as any)?.tasks ?? res;
+            if (Array.isArray(tArr)) {
+              collected.push(...tArr);
             }
-          } catch {}
+          } catch {
+            // Ignore per-project errors to keep overview usable in demo
+          }
         }
+
         const uid = (user as any)?.id;
-        const mine = uid ? tasks.filter((t) => (t.assigned_to_id || t.assignedTo?.id) === uid) : tasks;
+        const mine = uid
+          ? collected.filter((t) => (t.assigned_to_id || t.assignedTo?.id) === uid)
+          : collected;
         setMyTasks(mine);
       } finally {
         setLoading(false);
