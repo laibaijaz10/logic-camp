@@ -100,11 +100,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create the team
+    // Create the team, using the current user as team lead by default
     const team = await Team.create({
       name: parsed.data.name,
       description: parsed.data.description || null,
       is_active: true,
+      team_lead_id: (payload as any).userId,
     });
 
     return NextResponse.json({ team, message: 'Team created successfully' }, { status: 201 });

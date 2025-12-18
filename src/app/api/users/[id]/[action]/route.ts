@@ -21,9 +21,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     
     const { User } = await getModels();
 
-    // Check permissions
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
-    if (decoded.role !== 'admin' && decoded.role !== 'teamLead') {
+    // Check permissions using already verified user role
+    const requesterRole = authResult.user.role;
+    if (requesterRole !== 'admin' && requesterRole !== 'teamLead') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 

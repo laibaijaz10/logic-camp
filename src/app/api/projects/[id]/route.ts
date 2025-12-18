@@ -103,7 +103,7 @@ const updateProjectSchema = z.object({
 // ---------------------
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { Project, User, Team, ProjectMember } = await getModels();
+    const { Project, User, Team } = await getModels();
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
 

@@ -18,7 +18,7 @@ const links: SidebarLink[] = [
 ];
 
 const Sidebar: React.FC = () => {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const currentTab = (searchParams?.get('tab') || 'projects').toLowerCase();
 

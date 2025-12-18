@@ -22,7 +22,8 @@ interface Task {
 }
 
 export default function ProjectTasksPage() {
-  const { id } = useParams(); // 👈 project id from URL
+  const params = useParams<{ projectid: string }>(); // 👈 project id from URL
+  const projectId = params?.projectid;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -31,7 +32,7 @@ export default function ProjectTasksPage() {
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const res = await fetch(`/api/projects/${id}/tasks`);
+        const res = await fetch(`/api/projects/${projectId}/tasks`);
         if (res.ok) {
           const data = await res.json();
           setTasks(data);
@@ -40,14 +41,14 @@ export default function ProjectTasksPage() {
         console.error("Error fetching tasks:", err);
       }
     };
-    if (id) fetchTasks();
-  }, [id]);
+    if (projectId) fetchTasks();
+  }, [projectId]);
 
   // ✅ Handle create task
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`/api/projects/${id}/tasks`, {
+      const res = await fetch(`/api/projects/${projectId}/tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description }),
@@ -65,7 +66,7 @@ export default function ProjectTasksPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <h1 className="text-xl font-bold mb-4 text-white">Tasks for Project {id}</h1>
+      <h1 className="text-xl font-bold mb-4 text-white">Tasks for Project {projectId}</h1>
 
       {/* ✅ Task List */}
       <div className="mb-6 space-y-3">

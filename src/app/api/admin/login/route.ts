@@ -44,7 +44,13 @@ export async function POST(req: NextRequest) {
     
     console.log("Admin found:", admin.id);
 
-    const isMatch = await bcrypt.compare(password, admin.getDataValue("password"));
+    const passwordHash = admin.getDataValue("password") as string | undefined;
+    if (!passwordHash) {
+      console.error("Admin record missing password hash for email:", email);
+      return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    }
+
+    const isMatch = await bcrypt.compare(password, passwordHash);
     if (!isMatch) {
       console.log("Invalid password for admin email:", email);
       return NextResponse.json({ error: "Invalid password" }, { status: 401 });

@@ -10,15 +10,10 @@ export async function GET(req: NextRequest) {
     const payload = authResult;
     const userId = ((payload as unknown) as { sub: string }).sub;
 
-    const { Project, ProjectMember, Team, User, Task } = await getModels();
+    const { Project, Team, User, Task } = await getModels();
 
     const projects = await Project.findAll({
       include: [
-        {
-          model: ProjectMember,
-          where: { userId },
-          required: true,
-        },
         Team,
         { model: User, as: 'members' },
         { model: Task, as: 'tasks' },

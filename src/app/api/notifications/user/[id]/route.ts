@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getModels } from '@/lib/db';
 
-// GET /api/notifications/user/[id] - Get notifications for a specific user
+// GET /api/notifications/user/[id] - Placeholder, notifications model not implemented
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { Notification } = await getModels();
     const resolvedParams = await params;
     const userId = parseInt(resolvedParams.id);
     
@@ -18,44 +16,27 @@ export async function GET(
       );
     }
 
+    // We accept filters but do not actually query a notifications model
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
     const isRead = searchParams.get('isRead');
     const type = searchParams.get('type');
 
-    const whereClause: any = { user_id: userId };
-    
-    if (isRead !== null) {
-      whereClause.is_read = isRead === 'true';
-    }
-    
-    if (type) {
-      whereClause.type = type;
-    }
-
-    const notifications = await Notification.findAll({
-      where: whereClause,
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset
-    });
-
-    // Also get unread count
-    const unreadCount = await Notification.count({
-      where: {
-        user_id: userId,
-        is_read: false
-      }
-    });
-
     return NextResponse.json({
-      notifications,
-      unreadCount,
-      total: notifications.length
+      notifications: [],
+      unreadCount: 0,
+      total: 0,
+      filters: {
+        userId,
+        limit,
+        offset,
+        isRead,
+        type,
+      },
     });
   } catch (error) {
-    console.error('Error fetching user notifications:', error);
+    console.error('Error handling user notifications GET (placeholder):', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

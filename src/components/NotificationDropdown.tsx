@@ -2,7 +2,27 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, X, CheckCircle, AlertCircle, MessageSquare, Users, FolderPlus, Calendar } from 'lucide-react';
-import { getNotifications, markAsRead, type Notification, type NotificationResponse } from '@/services/notificationService';
+import { getNotifications, markAsRead } from '@/services/notificationService';
+
+// Lightweight notification types local to this component to avoid tight coupling
+type Notification = {
+  id: number;
+  userId: number;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: Date | string;
+  readAt?: Date | string | null;
+  relatedEntityType?: string;
+  relatedEntityId?: number;
+};
+
+interface NotificationResponse {
+  notifications: Notification[];
+  unreadCount: number;
+  totalCount: number;
+}
 
 interface NotificationDropdownProps {
   userId: number;
@@ -12,7 +32,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
   const [notificationData, setNotificationData] = useState<NotificationResponse>({
     notifications: [],
     unreadCount: 0,
-    total: 0
+    totalCount: 0
   });
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -67,7 +87,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
     }
   };
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (date: Date | string) => {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - new Date(date).getTime()) / 1000);
 
@@ -152,7 +172,7 @@ export default function NotificationDropdown({ userId }: NotificationDropdownPro
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
                 <p className="text-sm text-gray-500">
-                  {notificationData.unreadCount} unread of {notificationData.total} total
+                  {notificationData.unreadCount} unread of {notificationData.totalCount} total
                 </p>
               </div>
               <button

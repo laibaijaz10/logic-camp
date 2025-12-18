@@ -21,8 +21,8 @@ interface Team {
 
 export default function EditTeamPage() {
   const router = useRouter();
-  const params = useParams();
-  const teamId = params.id as string;
+  const params = useParams<{ id: string }>();
+  const teamId = params?.id;
 
   const [team, setTeam] = useState<Team | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);

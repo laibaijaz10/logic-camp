@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // DELETE /api/statuses/[id]
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = await params;
   try {
-    const id = Number(params.id);
+    const id = Number(resolvedParams.id);
     if (!id || Number.isNaN(id)) {
       return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
     }

@@ -155,7 +155,12 @@ export async function POST(req: NextRequest) {
       }
 
       // Process file if present
-      let fileData = null;
+      let fileData: {
+        name: string;
+        type: string;
+        size: number;
+        lastModified: Date;
+      } | null = null;
       if (file) {
         // In a real implementation, you would upload to cloud storage
         // and store the URL/reference. Here we're just storing basic file info.

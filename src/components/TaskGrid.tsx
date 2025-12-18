@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import TaskCard, { Task } from './TaskCard';
+import TaskCard from './TaskCard';
 
 export interface TaskGridProps {
   tasks: any[];

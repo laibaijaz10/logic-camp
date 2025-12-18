@@ -180,7 +180,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const { userId } = body;
 
     await TeamMember.destroy({
-      where: { team_id: teamId, user_id },
+      where: { team_id: teamId, user_id: userId },
     });
 
     return NextResponse.json({ message: 'Member removed successfully' });

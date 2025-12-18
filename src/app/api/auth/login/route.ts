@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
     }
 
-    const userData = user.get({ plain: true });
+    // Treat plain user object as loosely typed for this handler
+    const userData = user.get({ plain: true }) as any;
 
     if (!userData.is_approved) {
       return NextResponse.json(
@@ -31,7 +32,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isMatch = await bcrypt.compare(password, userData.password);
+    const passwordHash = userData.password as string | undefined;
+    if (!passwordHash) {
+      console.error('User record missing password hash for email:', email);
+      return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });
+    }
+
+    const isMatch = await bcrypt.compare(password, passwordHash);
     if (!isMatch) {
       console.log(`Password mismatch for email: ${email}`);
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 });

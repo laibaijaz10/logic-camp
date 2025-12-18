@@ -1,94 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getModels } from '@/lib/db';
 
-// PATCH /api/notifications/[id]/read - Mark notification as read
+// PATCH /api/notifications/[id]/read - Placeholder, notifications model not implemented
 export async function PATCH(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { Notification } = await getModels();
-    const resolvedParams = await params;
-    const notificationId = parseInt(resolvedParams.id);
-    
-    if (isNaN(notificationId)) {
-      return NextResponse.json(
-        { error: 'Invalid notification ID' },
-        { status: 400 }
-      );
-    }
+  const resolvedParams = await params;
+  const notificationId = parseInt(resolvedParams.id);
 
-    // Find the notification
-    const notification = await Notification.findByPk(notificationId);
-    
-    if (!notification) {
-      return NextResponse.json(
-        { error: 'Notification not found' },
-        { status: 404 }
-      );
-    }
-
-    // Update notification as read
-    await notification.update({
-      is_read: true,
-      updated_at: new Date()
-    });
-
-    return NextResponse.json({
-      message: 'Notification marked as read',
-      notification
-    });
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
+  if (isNaN(notificationId)) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: 'Invalid notification ID' },
+      { status: 400 }
     );
   }
+
+  // Notifications persistence is not implemented; respond as a no-op
+  return NextResponse.json({
+    message: 'Notification marked as read (no-op, notifications not implemented)',
+    id: notificationId,
+  });
 }
 
-// DELETE /api/notifications/[id]/read - Mark notification as unread (optional)
+// DELETE /api/notifications/[id]/read - Placeholder, notifications model not implemented
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { Notification } = await getModels();
-    const resolvedParams = await params;
-    const notificationId = parseInt(resolvedParams.id);
-    
-    if (isNaN(notificationId)) {
-      return NextResponse.json(
-        { error: 'Invalid notification ID' },
-        { status: 400 }
-      );
-    }
+  const resolvedParams = await params;
+  const notificationId = parseInt(resolvedParams.id);
 
-    // Find the notification
-    const notification = await Notification.findByPk(notificationId);
-    
-    if (!notification) {
-      return NextResponse.json(
-        { error: 'Notification not found' },
-        { status: 404 }
-      );
-    }
-
-    // Update notification as unread
-    await notification.update({
-      is_read: false,
-      updated_at: new Date()
-    });
-
-    return NextResponse.json({
-      message: 'Notification marked as unread',
-      notification
-    });
-  } catch (error) {
-    console.error('Error marking notification as unread:', error);
+  if (isNaN(notificationId)) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: 'Invalid notification ID' },
+      { status: 400 }
     );
   }
+
+  // Notifications persistence is not implemented; respond as a no-op
+  return NextResponse.json({
+    message: 'Notification marked as unread (no-op, notifications not implemented)',
+    id: notificationId,
+  });
 }

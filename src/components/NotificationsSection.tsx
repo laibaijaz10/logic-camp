@@ -1,9 +1,17 @@
 import React from 'react';
-import { NotificationAttributes } from '@/models/Notification';
 import Notification from '@/components/Notification';
 
+// Lightweight notification shape aligned with Notification component props
+type NotificationItem = {
+  id?: number;
+  title?: string;
+  message?: string;
+  type?: string;
+  createdAt?: string | Date;
+};
+
 type NotificationsSectionProps = {
-  notifications: NotificationAttributes[];
+  notifications: NotificationItem[];
 };
 
 export default function NotificationsSection({ notifications }: NotificationsSectionProps) {

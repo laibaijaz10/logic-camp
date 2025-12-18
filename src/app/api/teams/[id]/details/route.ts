@@ -38,9 +38,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Team not found' }, { status: 404 });
     }
 
-    // Get associated projects
+    // Get associated projects (Project.team_id column)
     const projects = await Project.findAll({
-      where: { teamId },
+      where: { team_id: teamId },
       attributes: ['id', 'name', 'description', 'status', 'priority'],
       order: [['updatedAt', 'DESC']]
     });

@@ -8,7 +8,7 @@ import { authenticateUser } from '@/lib/auth';
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
   try {
-    const { Team, Project, TeamMember, Task, ProjectMember } = await getModels();
+    const { Team, Project, TeamMember, Task } = await getModels();
     const authResult = await authenticateUser(req);
     if (authResult instanceof NextResponse) return authResult;
     const payload = authResult;
@@ -25,8 +25,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const team = await Team.findByPk(teamId);
     if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 
-    // Get all associated projects
-    const projects = await Project.findAll({ where: { teamId } });
+    // Get all associated projects (Project.team_id column)
+    const projects = await Project.findAll({ where: { team_id: teamId } });
     const projectIds = projects.map(p => p.id);
 
     // Start transaction for cascade deletion
@@ -34,29 +34,24 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     const transaction = await sequelize!.transaction();
 
     try {
-      // Delete tasks associated with projects
+      // Delete tasks and projects associated with this team
       if (projectIds.length > 0) {
         await Task.destroy({ 
-          where: { projectId: projectIds },
+          // Task.project_id column
+          where: { project_id: projectIds },
           transaction 
         });
 
-        // Delete project members
-        await ProjectMember.destroy({ 
-          where: { projectId: projectIds },
-          transaction 
-        });
-
-        // Delete projects
         await Project.destroy({ 
-          where: { teamId },
+          // Project.team_id column
+          where: { team_id: teamId },
           transaction 
         });
       }
 
-      // Delete team members
+      // Delete team members (TeamMember.team_id column)
       await TeamMember.destroy({ 
-        where: { teamId },
+        where: { team_id: teamId },
         transaction 
       });
 
